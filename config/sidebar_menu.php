@@ -3,12 +3,14 @@
 return [
     [
         'label' => 'Main Menu',
+        'icon' => 'fa-solid fa-gauge-high',
         'items' => [
             ['title' => 'Dashboard', 'icon' => 'fa-solid fa-gauge-high', 'route' => 'dashboard', 'description' => 'Overview and daily status'],
         ],
     ],
     [
         'label' => 'Administration',
+        'icon' => 'fa-solid fa-user-shield',
         'items' => [
             ['title' => 'Users', 'icon' => 'fa-solid fa-users', 'route' => 'admin.users.index', 'permission' => 'manage users', 'description' => 'Manage employee records'],
             ['title' => 'Roles', 'icon' => 'fa-solid fa-user-shield', 'route' => 'admin.roles.index', 'permission' => 'manage roles', 'description' => 'Access levels and scopes'],
@@ -17,6 +19,7 @@ return [
     ],
     [
         'label' => 'Licensing',
+        'icon' => 'fa-solid fa-id-card-clip',
         'items' => [
             ['title' => 'License Plans', 'icon' => 'fa-solid fa-id-card', 'route' => 'admin.license-plans.index', 'permission' => 'manage license plans', 'description' => 'Packages and pricing'],
             ['title' => 'User Licenses', 'icon' => 'fa-solid fa-file-invoice', 'route' => 'admin.user-licenses.index', 'permission' => 'manage user licenses', 'description' => 'Assigned and active plans'],
@@ -25,6 +28,7 @@ return [
     ],
     [
         'label' => 'System',
+        'icon' => 'fa-solid fa-gears',
         'items' => [
             ['title' => 'Settings', 'icon' => 'fa-solid fa-gears', 'route' => 'admin.settings.edit', 'permission' => 'manage settings', 'description' => 'Global configuration'],
             ['title' => 'Countries', 'icon' => 'fa-solid fa-earth-americas', 'route' => 'admin.countries.index', 'permission' => 'manage countries', 'description' => 'Geo reference data'],
@@ -35,6 +39,7 @@ return [
     ],
     [
         'label' => 'Monitoring',
+        'icon' => 'fa-solid fa-chart-line',
         'items' => [
             ['title' => 'Activity Logs', 'icon' => 'fa-solid fa-clock-rotate-left', 'route' => 'admin.activity-logs.index', 'permission' => 'view activity logs', 'description' => 'System and login timeline'],
             ['title' => 'Audit Logs', 'icon' => 'fa-solid fa-list-check', 'route' => 'admin.audit-logs.index', 'permission' => 'view audit logs', 'description' => 'Old vs new value trail'],
@@ -43,6 +48,7 @@ return [
     ],
     [
         'label' => 'Communication',
+        'icon' => 'fa-solid fa-comments',
         'items' => [
             ['title' => 'Notification Templates', 'icon' => 'fa-solid fa-envelope-open-text', 'route' => 'admin.notification-templates.index', 'permission' => 'manage notification templates', 'description' => 'Reusable message templates'],
             ['title' => 'Notification Log', 'icon' => 'fa-regular fa-bell', 'route' => 'admin.notification-logs.index', 'permission' => 'manage notification templates', 'description' => 'Delivered notifications'],
@@ -51,6 +57,7 @@ return [
     ],
     [
         'label' => 'My Workspace',
+        'icon' => 'fa-solid fa-briefcase',
         'items' => [
             ['title' => 'Profile', 'icon' => 'fa-solid fa-user-gear', 'route' => 'profile.edit', 'description' => 'Account and security'],
             ['title' => 'My Licenses', 'icon' => 'fa-solid fa-id-badge', 'route' => 'my-licenses.index', 'description' => 'Assigned plans and slots'],

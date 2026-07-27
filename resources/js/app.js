@@ -6,14 +6,23 @@ import DataTable from 'datatables.net-bs5';
 import 'datatables.net-responsive-bs5';
 import Swal from 'sweetalert2';
 import Chart from 'chart.js/auto';
+import { initThemeCustomizer } from './theme-customizer';
 
 window.$ = window.jQuery = $;
 window.Swal = Swal;
 window.Chart = Chart;
 
-DataTable(window, $);
+try {
+    DataTable(window, $);
+} catch (e) {
+    // datatables.net's UMD bootstrap reassigns the bareword `window`, which
+    // throws under ES module strict mode; harmless, DataTable still works
+    // when instantiated per-table below.
+}
 
 document.addEventListener('DOMContentLoaded', () => {
+    initThemeCustomizer();
+
     document.querySelectorAll('[data-datatable]').forEach((table) => {
         new DataTable(table, {
             responsive: true,
@@ -66,24 +75,28 @@ document.addEventListener('DOMContentLoaded', () => {
     if (sidebarSearch) {
         sidebarSearch.addEventListener('input', () => {
             const term = sidebarSearch.value.trim().toLowerCase();
+            const topLevelItems = document.querySelectorAll('.tracker-sidebar-nav > .nav-item');
 
-            document.querySelectorAll('.tracker-sidebar-nav .nav-item').forEach((item) => {
-                const text = item.textContent.toLowerCase();
-                item.style.display = term === '' || text.includes(term) ? '' : 'none';
-            });
+            topLevelItems.forEach((item) => {
+                const isParent = item.classList.contains('tracker-nav-parent');
 
-            document.querySelectorAll('.tracker-sidebar-nav .nav-header').forEach((header) => {
-                let sibling = header.nextElementSibling;
-                let hasVisible = false;
-
-                while (sibling && !sibling.classList.contains('nav-header')) {
-                    if (sibling.style.display !== 'none') {
-                        hasVisible = true;
-                    }
-                    sibling = sibling.nextElementSibling;
+                if (! isParent) {
+                    const matches = term === '' || item.textContent.toLowerCase().includes(term);
+                    item.style.display = matches ? '' : 'none';
+                    return;
                 }
 
-                header.style.display = hasVisible ? '' : 'none';
+                const children = item.querySelectorAll(':scope > .tracker-submenu > .nav-item');
+                let anyChildVisible = false;
+
+                children.forEach((child) => {
+                    const matches = term === '' || child.textContent.toLowerCase().includes(term);
+                    child.style.display = matches ? '' : 'none';
+                    anyChildVisible = anyChildVisible || matches;
+                });
+
+                item.style.display = anyChildVisible ? '' : 'none';
+                item.classList.toggle('tracker-force-open', term !== '' && anyChildVisible);
             });
         });
     }

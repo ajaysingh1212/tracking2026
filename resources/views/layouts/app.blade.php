@@ -5,10 +5,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('page-title', 'Dashboard') · {{ config('app.name', 'Tracker Enterprise') }}</title>
+    <script>
+        (function () {
+            try {
+                var s = JSON.parse(localStorage.getItem('tracker.theme') || '{}');
+                var root = document.documentElement;
+                root.setAttribute('data-bs-theme', s.mode === 'dark' ? 'dark' : 'light');
+                root.setAttribute('data-accent', s.accent || 'blue');
+                root.setAttribute('data-sidebar-position', s.sidebarPosition || 'left');
+                root.setAttribute('data-sidebar-visibility', s.sidebarVisibility || 'show');
+            } catch (e) {}
+        })();
+    </script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('styles')
 </head>
-<body class="hold-transition sidebar-expand-lg layout-fixed app-loaded tracker-shell">
+<body class="hold-transition sidebar-mini sidebar-expand-lg layout-fixed app-loaded tracker-shell">
+    <script>
+        (function () {
+            try {
+                var s = JSON.parse(localStorage.getItem('tracker.theme') || '{}');
+                if (s.sidebarStyle === 'compact') {
+                    document.body.classList.add('sidebar-collapse');
+                }
+            } catch (e) {}
+        })();
+    </script>
     <div class="app-wrapper">
         @if (session('status'))
             <div data-toast-message="{{ session('status') }}" data-toast-type="success"></div>
@@ -19,6 +41,10 @@
         @endif
 
         @include('layouts.partials.topbar')
+
+        <button type="button" class="tracker-sidebar-reveal" data-sidebar-reveal title="Show sidebar">
+            <i class="fa-solid fa-bars"></i>
+        </button>
 
         @include('layouts.partials.sidebar')
 
@@ -66,6 +92,8 @@
 
         @include('layouts.partials.footer')
     </div>
+
+    @include('layouts.partials.theme-customizer')
 
     @stack('scripts')
 </body>
