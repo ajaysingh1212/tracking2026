@@ -14,8 +14,7 @@ class UserLicenseController extends Controller
 {
     public function __construct(
         protected LicenseService $licenseService,
-    ) {
-    }
+    ) {}
 
     public function index(Request $request): AnonymousResourceCollection
     {

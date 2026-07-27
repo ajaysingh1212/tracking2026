@@ -6,21 +6,22 @@ use App\Http\Requests\DeleteAccountRequest;
 use App\Http\Requests\ProfileUpdateRequest;
 use App\Services\ActivityLogService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class ProfileController extends Controller
 {
     public function __construct(
         protected ActivityLogService $activityLogService,
-    ) {
-    }
+    ) {}
 
     /**
      * Display the user's profile form.
      */
-    public function edit(\Illuminate\Http\Request $request): View
+    public function edit(Request $request): View
     {
         return view('profile.edit', [
             'user' => $request->user(),
@@ -32,16 +33,32 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        $user = $request->user();
+        $data = $request->safe()->except(['avatar', 'remove_avatar']);
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+        $user->fill($data);
+
+        if ($user->isDirty('email')) {
+            $user->email_verified_at = null;
         }
 
-        $request->user()->save();
-        $this->activityLogService->log($request->user(), 'profile.updated', $request->user());
+        if ($request->boolean('remove_avatar') && $user->avatar) {
+            Storage::disk('public')->delete($user->avatar);
+            $user->avatar = null;
+        }
 
-        return Redirect::route('profile.edit')->with('status', 'profile-updated');
+        if ($request->hasFile('avatar')) {
+            if ($user->avatar) {
+                Storage::disk('public')->delete($user->avatar);
+            }
+
+            $user->avatar = $request->file('avatar')->store('avatars', 'public');
+        }
+
+        $user->save();
+        $this->activityLogService->log($user, 'profile.updated', $user);
+
+        return Redirect::route('profile.edit')->with('status', 'Profile updated successfully.');
     }
 
     /**

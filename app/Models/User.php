@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\ThemeMode;
 use App\Enums\UserStatus;
 use App\Traits\HasUuid;
+use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -17,8 +18,9 @@ use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
+    /** @use HasFactory<UserFactory> */
     use HasApiTokens;
+
     use HasFactory;
     use HasRoles;
     use HasUuid;
@@ -94,6 +96,16 @@ class User extends Authenticatable implements MustVerifyEmail
     public function city(): BelongsTo
     {
         return $this->belongsTo(City::class);
+    }
+
+    public function deviceSessions(): HasMany
+    {
+        return $this->hasMany(DeviceSession::class);
+    }
+
+    public function supportTickets(): HasMany
+    {
+        return $this->hasMany(SupportTicket::class);
     }
 
     public function country(): BelongsTo

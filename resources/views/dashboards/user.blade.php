@@ -1,6 +1,9 @@
-<x-app-layout>
-    <x-slot name="header">User Dashboard</x-slot>
+@extends('layouts.app')
 
+@section('page-eyebrow', 'Workspace')
+@section('page-title', 'User Dashboard')
+
+@section('content')
     <div class="tracker-hero-card tracker-hero-card-user mb-4">
         <div class="row align-items-center g-4">
             <div class="col-lg-8">
@@ -129,8 +132,13 @@
                     <h5 class="modal-title">Support Center</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body text-muted">Support workflow foundation is ready. Ticket forms and conversation UI can sit here next.</div>
+                <div class="modal-body text-muted">
+                    Need help? Open a support ticket and our team will get back to you.
+                    @if (Route::has('support.create'))
+                        <a href="{{ route('support.create') }}" class="btn tracker-primary-btn w-100 mt-3">Open a Ticket</a>
+                    @endif
+                </div>
             </div>
         </div>
     </div>
-</x-app-layout>
+@endsection

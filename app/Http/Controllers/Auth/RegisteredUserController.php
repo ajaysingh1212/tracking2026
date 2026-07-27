@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Enums\ThemeMode;
+use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\RegisterRequest;
-use App\Enums\UserStatus;
-use App\Enums\ThemeMode;
 use App\Models\User;
 use App\Services\ActivityLogService;
 use Illuminate\Auth\Events\Registered;
@@ -19,8 +19,7 @@ class RegisteredUserController extends Controller
 {
     public function __construct(
         protected ActivityLogService $activityLogService,
-    ) {
-    }
+    ) {}
 
     /**
      * Display the registration view.
@@ -32,7 +31,6 @@ class RegisteredUserController extends Controller
 
     /**
      * Handle an incoming registration request.
-     *
      */
     public function store(RegisterRequest $request): RedirectResponse
     {

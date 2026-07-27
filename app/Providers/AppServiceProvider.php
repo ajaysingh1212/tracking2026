@@ -2,16 +2,47 @@
 
 namespace App\Providers;
 
+use App\Interfaces\Repositories\ActivityLogRepositoryInterface;
+use App\Interfaces\Repositories\AuditLogRepositoryInterface;
+use App\Interfaces\Repositories\LicensePlanRepositoryInterface;
+use App\Interfaces\Repositories\UserLicenseRepositoryInterface;
+use App\Interfaces\Repositories\UserRepositoryInterface;
+use App\Models\City;
+use App\Models\Country;
+use App\Models\DeviceSession;
+use App\Models\Language;
 use App\Models\LicensePlan;
 use App\Models\NotificationTemplate;
 use App\Models\Setting;
+use App\Models\State;
+use App\Models\SupportTicket;
 use App\Models\TrackingRelation;
 use App\Models\User;
+use App\Models\UserLicense;
 use App\Observers\AuditableObserver;
 use App\Observers\UserObserver;
+use App\Policies\CityPolicy;
+use App\Policies\CountryPolicy;
+use App\Policies\DeviceSessionPolicy;
+use App\Policies\LanguagePolicy;
+use App\Policies\LicensePlanPolicy;
+use App\Policies\RolePolicy;
+use App\Policies\SettingPolicy;
+use App\Policies\StatePolicy;
+use App\Policies\SupportTicketPolicy;
+use App\Policies\TrackingRelationPolicy;
+use App\Policies\UserLicensePolicy;
+use App\Policies\UserPolicy;
+use App\Repositories\ActivityLogRepository;
+use App\Repositories\AuditLogRepository;
+use App\Repositories\LicensePlanRepository;
+use App\Repositories\UserLicenseRepository;
+use App\Repositories\UserRepository;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
+use Spatie\Permission\Models\Role;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -20,11 +51,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->bind(\App\Interfaces\Repositories\ActivityLogRepositoryInterface::class, \App\Repositories\ActivityLogRepository::class);
-        $this->app->bind(\App\Interfaces\Repositories\AuditLogRepositoryInterface::class, \App\Repositories\AuditLogRepository::class);
-        $this->app->bind(\App\Interfaces\Repositories\LicensePlanRepositoryInterface::class, \App\Repositories\LicensePlanRepository::class);
-        $this->app->bind(\App\Interfaces\Repositories\UserLicenseRepositoryInterface::class, \App\Repositories\UserLicenseRepository::class);
-        $this->app->bind(\App\Interfaces\Repositories\UserRepositoryInterface::class, \App\Repositories\UserRepository::class);
+        $this->app->bind(ActivityLogRepositoryInterface::class, ActivityLogRepository::class);
+        $this->app->bind(AuditLogRepositoryInterface::class, AuditLogRepository::class);
+        $this->app->bind(LicensePlanRepositoryInterface::class, LicensePlanRepository::class);
+        $this->app->bind(UserLicenseRepositoryInterface::class, UserLicenseRepository::class);
+        $this->app->bind(UserRepositoryInterface::class, UserRepository::class);
     }
 
     /**
@@ -36,10 +67,30 @@ class AppServiceProvider extends ServiceProvider
         Paginator::useBootstrapFive();
 
         User::observe(UserObserver::class);
+        User::observe(AuditableObserver::class);
 
         LicensePlan::observe(AuditableObserver::class);
         NotificationTemplate::observe(AuditableObserver::class);
         Setting::observe(AuditableObserver::class);
         TrackingRelation::observe(AuditableObserver::class);
+        UserLicense::observe(AuditableObserver::class);
+        Country::observe(AuditableObserver::class);
+        State::observe(AuditableObserver::class);
+        City::observe(AuditableObserver::class);
+        Language::observe(AuditableObserver::class);
+        SupportTicket::observe(AuditableObserver::class);
+
+        Gate::policy(User::class, UserPolicy::class);
+        Gate::policy(Role::class, RolePolicy::class);
+        Gate::policy(LicensePlan::class, LicensePlanPolicy::class);
+        Gate::policy(UserLicense::class, UserLicensePolicy::class);
+        Gate::policy(TrackingRelation::class, TrackingRelationPolicy::class);
+        Gate::policy(Country::class, CountryPolicy::class);
+        Gate::policy(State::class, StatePolicy::class);
+        Gate::policy(City::class, CityPolicy::class);
+        Gate::policy(Language::class, LanguagePolicy::class);
+        Gate::policy(Setting::class, SettingPolicy::class);
+        Gate::policy(DeviceSession::class, DeviceSessionPolicy::class);
+        Gate::policy(SupportTicket::class, SupportTicketPolicy::class);
     }
 }

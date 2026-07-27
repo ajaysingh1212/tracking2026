@@ -1,6 +1,9 @@
-<x-app-layout>
-    <x-slot name="header">Admin Dashboard</x-slot>
+@extends('layouts.app')
 
+@section('page-eyebrow', 'Administration')
+@section('page-title', 'Admin Dashboard')
+
+@section('content')
     <div class="tracker-hero-card mb-4">
         <div class="row align-items-center g-4">
             <div class="col-xl-7">
@@ -183,4 +186,4 @@
             </div>
         </div>
     </div>
-</x-app-layout>
+@endsection

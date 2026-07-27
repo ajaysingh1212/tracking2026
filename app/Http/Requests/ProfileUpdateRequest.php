@@ -40,6 +40,8 @@ class ProfileUpdateRequest extends FormRequest
             'timezone' => ['nullable', 'string', 'max:100'],
             'theme' => ['nullable', new Enum(ThemeMode::class)],
             'address' => ['nullable', 'string'],
+            'avatar' => ['nullable', 'image', 'max:2048'],
+            'remove_avatar' => ['nullable', 'boolean'],
         ];
     }
 }

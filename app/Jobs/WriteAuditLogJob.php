@@ -18,8 +18,7 @@ class WriteAuditLogJob implements ShouldQueue
         public int $auditableId,
         public ?array $oldValues,
         public ?array $newValues,
-    ) {
-    }
+    ) {}
 
     public function handle(): void
     {

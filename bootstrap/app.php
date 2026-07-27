@@ -1,10 +1,19 @@
 <?php
 
+use App\Http\Middleware\AddSecurityHeaders;
+use App\Http\Middleware\TrackLastActivity;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
+use Spatie\Permission\Middleware\PermissionMiddleware;
+use Spatie\Permission\Middleware\RoleMiddleware;
+use Spatie\Permission\Middleware\RoleOrPermissionMiddleware;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -15,9 +24,9 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
-            'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
-            'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
-            'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
+            'role' => RoleMiddleware::class,
+            'permission' => PermissionMiddleware::class,
+            'role_or_permission' => RoleOrPermissionMiddleware::class,
         ]);
 
         $middleware->statefulApi();
@@ -34,30 +43,30 @@ return Application::configure(basePath: dirname(__DIR__))
         );
 
         $middleware->append([
-            \App\Http\Middleware\AddSecurityHeaders::class,
-            \App\Http\Middleware\TrackLastActivity::class,
+            AddSecurityHeaders::class,
+            TrackLastActivity::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        $exceptions->render(function (\Throwable $throwable, Request $request) {
+        $exceptions->render(function (Throwable $throwable, Request $request) {
             if (! $request->expectsJson()) {
                 return null;
             }
 
             $status = match (true) {
-                $throwable instanceof \Illuminate\Validation\ValidationException => Response::HTTP_UNPROCESSABLE_ENTITY,
-                $throwable instanceof \Illuminate\Auth\AuthenticationException => Response::HTTP_UNAUTHORIZED,
-                $throwable instanceof \Illuminate\Auth\Access\AuthorizationException => Response::HTTP_FORBIDDEN,
-                $throwable instanceof \Symfony\Component\HttpKernel\Exception\NotFoundHttpException => Response::HTTP_NOT_FOUND,
+                $throwable instanceof ValidationException => Response::HTTP_UNPROCESSABLE_ENTITY,
+                $throwable instanceof AuthenticationException => Response::HTTP_UNAUTHORIZED,
+                $throwable instanceof AuthorizationException => Response::HTTP_FORBIDDEN,
+                $throwable instanceof NotFoundHttpException => Response::HTTP_NOT_FOUND,
                 default => Response::HTTP_INTERNAL_SERVER_ERROR,
             };
 
             return response()->json([
                 'success' => false,
-                'message' => $throwable instanceof \Illuminate\Validation\ValidationException
+                'message' => $throwable instanceof ValidationException
                     ? 'The given data was invalid.'
                     : ($throwable->getMessage() ?: Response::$statusTexts[$status]),
-                'errors' => $throwable instanceof \Illuminate\Validation\ValidationException
+                'errors' => $throwable instanceof ValidationException
                     ? $throwable->errors()
                     : null,
             ], $status);

@@ -27,7 +27,7 @@ class DashboardController extends Controller
                     'revenue' => UserLicense::query()->where('payment_status', 'paid')->count(),
                     'todaysLogins' => ActivityLog::where('event', 'auth.login')->whereDate('logged_at', today())->count(),
                     'todaysRegistrations' => User::whereDate('created_at', today())->count(),
-                    'latestActivities' => ActivityLog::latest('logged_at')->take(10)->get(),
+                    'latestActivities' => ActivityLog::with('user')->latest('logged_at')->take(10)->get(),
                 ],
             ]);
         }

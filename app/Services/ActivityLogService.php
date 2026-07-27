@@ -9,8 +9,7 @@ class ActivityLogService
 {
     public function __construct(
         protected ActivityLogRepositoryInterface $activityLogs,
-    ) {
-    }
+    ) {}
 
     public function log(?User $user, string $event, ?object $subject = null, array $properties = []): void
     {
@@ -18,7 +17,7 @@ class ActivityLogService
             'user_id' => $user?->id,
             'event' => $event,
             'subject_type' => $subject ? $subject::class : null,
-            'subject_id' => method_exists($subject, 'getKey') ? $subject->getKey() : null,
+            'subject_id' => $subject && method_exists($subject, 'getKey') ? $subject->getKey() : null,
             'properties' => $properties,
             'ip_address' => request()?->ip(),
             'user_agent' => request()?->userAgent(),

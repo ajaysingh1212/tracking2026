@@ -10,14 +10,14 @@ use App\Services\ActivityLogService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class AuthenticatedSessionController extends Controller
 {
     public function __construct(
         protected ActivityLogService $activityLogService,
-    ) {
-    }
+    ) {}
 
     /**
      * Display the login view.
@@ -34,7 +34,7 @@ class AuthenticatedSessionController extends Controller
     {
         try {
             $request->authenticate();
-        } catch (\Illuminate\Validation\ValidationException $exception) {
+        } catch (ValidationException $exception) {
             FailedLogin::create([
                 'user_id' => null,
                 'email' => $request->string('email')->toString(),

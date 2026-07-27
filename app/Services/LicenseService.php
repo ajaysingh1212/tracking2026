@@ -7,6 +7,7 @@ use App\Enums\PaymentStatus;
 use App\Interfaces\Repositories\UserLicenseRepositoryInterface;
 use App\Models\LicensePlan;
 use App\Models\User;
+use App\Models\UserLicense;
 use Illuminate\Support\Str;
 
 class LicenseService
@@ -14,10 +15,9 @@ class LicenseService
     public function __construct(
         protected UserLicenseRepositoryInterface $licenses,
         protected ActivityLogService $activityLogService,
-    ) {
-    }
+    ) {}
 
-    public function purchase(User $user, LicensePlan $plan): \App\Models\UserLicense
+    public function purchase(User $user, LicensePlan $plan): UserLicense
     {
         $purchaseDate = now();
         $activationDate = now();
@@ -42,6 +42,48 @@ class LicenseService
 
         $this->activityLogService->log($user, 'license.purchase', $license, [
             'plan' => $plan->name,
+        ]);
+
+        return $license;
+    }
+
+    public function activate(UserLicense $license): UserLicense
+    {
+        $license->update([
+            'status' => LicenseStatus::Active,
+            'activation_date' => $license->activation_date ?? now(),
+        ]);
+
+        $this->activityLogService->log(auth()->user(), 'license.activated', $license, [
+            'license_number' => $license->license_number,
+        ]);
+
+        return $license;
+    }
+
+    public function extend(UserLicense $license, int $days): UserLicense
+    {
+        $base = $license->expiry_date && $license->expiry_date->isFuture() ? $license->expiry_date : now();
+
+        $license->update([
+            'expiry_date' => $base->copy()->addDays($days),
+            'status' => LicenseStatus::Active,
+        ]);
+
+        $this->activityLogService->log(auth()->user(), 'license.extended', $license, [
+            'license_number' => $license->license_number,
+            'days' => $days,
+        ]);
+
+        return $license;
+    }
+
+    public function cancel(UserLicense $license): UserLicense
+    {
+        $license->update(['status' => LicenseStatus::Cancelled]);
+
+        $this->activityLogService->log(auth()->user(), 'license.cancelled', $license, [
+            'license_number' => $license->license_number,
         ]);
 
         return $license;

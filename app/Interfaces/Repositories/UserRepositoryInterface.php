@@ -9,5 +9,7 @@ interface UserRepositoryInterface
 {
     public function paginate(int $perPage = 15): LengthAwarePaginator;
 
+    public function paginateForAdmin(array $filters = [], int $perPage = 15): LengthAwarePaginator;
+
     public function create(array $attributes): User;
 }

@@ -12,8 +12,7 @@ class LicensePlanController extends Controller
 {
     public function __construct(
         protected LicensePlanRepositoryInterface $licensePlans,
-    ) {
-    }
+    ) {}
 
     public function index(): AnonymousResourceCollection
     {

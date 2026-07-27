@@ -27,6 +27,7 @@ class RoleAndPermissionSeeder extends Seeder
             'manage cities',
             'manage languages',
             'view notifications',
+            'manage notification templates',
             'view activity logs',
             'view audit logs',
             'manage device sessions',
@@ -51,6 +52,7 @@ class RoleAndPermissionSeeder extends Seeder
             'manage tracking relations',
             'manage settings',
             'view notifications',
+            'manage notification templates',
             'view activity logs',
             'view audit logs',
             'manage device sessions',
@@ -65,7 +67,6 @@ class RoleAndPermissionSeeder extends Seeder
         $user->syncPermissions([
             'view dashboard',
             'view notifications',
-            'manage support tickets',
         ]);
     }
 }
