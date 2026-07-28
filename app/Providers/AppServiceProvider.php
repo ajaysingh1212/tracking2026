@@ -38,9 +38,12 @@ use App\Repositories\AuditLogRepository;
 use App\Repositories\LicensePlanRepository;
 use App\Repositories\UserLicenseRepository;
 use App\Repositories\UserRepository;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Spatie\Permission\Models\Role;
 
@@ -65,6 +68,10 @@ class AppServiceProvider extends ServiceProvider
     {
         Model::shouldBeStrict(! app()->isProduction());
         Paginator::useBootstrapFive();
+
+        RateLimiter::for('api', function (Request $request) {
+            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
+        });
 
         User::observe(UserObserver::class);
         User::observe(AuditableObserver::class);

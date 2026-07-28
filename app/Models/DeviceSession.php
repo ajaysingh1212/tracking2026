@@ -5,6 +5,8 @@ namespace App\Models;
 use App\Traits\HasUuid;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class DeviceSession extends Model
 {
@@ -38,5 +40,20 @@ class DeviceSession extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function status(): HasOne
+    {
+        return $this->hasOne(DeviceStatus::class);
+    }
+
+    public function gpsLocations(): HasMany
+    {
+        return $this->hasMany(GpsLocation::class);
+    }
+
+    public function trackingSessions(): HasMany
+    {
+        return $this->hasMany(TrackingSession::class);
     }
 }

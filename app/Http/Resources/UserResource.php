@@ -21,6 +21,7 @@ class UserResource extends JsonResource
             'status' => $this->status?->value,
             'timezone' => $this->timezone,
             'theme' => $this->theme?->value,
+            'distance_filter_meters' => $this->trackingPreference?->distance_filter_meters ?? 25,
         ];
     }
 }

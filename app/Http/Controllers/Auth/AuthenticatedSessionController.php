@@ -7,6 +7,7 @@ use App\Http\Requests\Auth\LoginRequest;
 use App\Models\DeviceSession;
 use App\Models\FailedLogin;
 use App\Services\ActivityLogService;
+use App\Services\UserPresenceService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,6 +18,7 @@ class AuthenticatedSessionController extends Controller
 {
     public function __construct(
         protected ActivityLogService $activityLogService,
+        protected UserPresenceService $presenceService,
     ) {}
 
     /**
@@ -72,6 +74,7 @@ class AuthenticatedSessionController extends Controller
         );
 
         $this->activityLogService->log($request->user(), 'auth.login', $request->user());
+        $this->presenceService->broadcastChange($request->user()->id);
 
         return redirect()->intended(route('dashboard', absolute: false));
     }
@@ -93,6 +96,8 @@ class AuthenticatedSessionController extends Controller
                     'logged_out_at' => now(),
                     'is_current' => false,
                 ]);
+
+            $this->presenceService->broadcastChange($user->id);
         }
 
         Auth::guard('web')->logout();

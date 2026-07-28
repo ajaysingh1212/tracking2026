@@ -10,6 +10,7 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -156,5 +157,30 @@ class User extends Authenticatable implements MustVerifyEmail
     public function userLicenses(): HasMany
     {
         return $this->hasMany(UserLicense::class);
+    }
+
+    public function gpsLocations(): HasMany
+    {
+        return $this->hasMany(GpsLocation::class);
+    }
+
+    public function trackingSessions(): HasMany
+    {
+        return $this->hasMany(TrackingSession::class);
+    }
+
+    public function diagnosticLogs(): HasMany
+    {
+        return $this->hasMany(DiagnosticLog::class);
+    }
+
+    public function offlineSyncLogs(): HasMany
+    {
+        return $this->hasMany(OfflineSyncLog::class);
+    }
+
+    public function trackingPreference(): HasOne
+    {
+        return $this->hasOne(UserTrackingPreference::class);
     }
 }

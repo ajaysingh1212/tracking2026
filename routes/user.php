@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\User\DeviceSessionController;
 use App\Http\Controllers\User\LicenseController;
+use App\Http\Controllers\User\LocationSharingController;
 use App\Http\Controllers\User\NotificationController;
 use App\Http\Controllers\User\SettingsController;
 use App\Http\Controllers\User\SupportTicketController;
@@ -9,6 +10,8 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('my-licenses', [LicenseController::class, 'index'])->name('my-licenses.index');
+
+    Route::get('my-location', [LocationSharingController::class, 'index'])->name('my-location.index');
 
     Route::get('my-devices', [DeviceSessionController::class, 'index'])->name('my-devices.index');
     Route::post('my-devices/revoke-others', [DeviceSessionController::class, 'revokeOthers'])->name('my-devices.revoke-others');

@@ -1772,3 +1772,99 @@ body {
         height: 50px;
     }
 }
+
+/* ---------- Live map ---------- */
+
+.tracker-live-map {
+    height: 640px;
+    width: 100%;
+    border-radius: 24px;
+    overflow: hidden;
+}
+
+.tracker-map-marker {
+    position: relative;
+    width: 36px;
+    height: 36px;
+}
+
+.tracker-map-marker-dot {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--tracker-primary), var(--tracker-secondary));
+    color: #fff;
+    font-weight: 800;
+    font-size: 0.9rem;
+    box-shadow: 0 8px 18px color-mix(in srgb, var(--tracker-primary) 45%, transparent);
+    border: 2px solid #fff;
+}
+
+.tracker-map-marker-arrow {
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-bottom: 10px solid var(--tracker-primary);
+    transform-origin: 50% 28px;
+    transform: translateX(-50%) rotate(0deg);
+    transition: transform 0.4s var(--tracker-ease);
+}
+
+.tracker-map-marker-offline .tracker-map-marker-dot {
+    background: linear-gradient(135deg, #8a94a6, #5c6577);
+    box-shadow: 0 8px 18px rgba(90, 100, 120, 0.35);
+    opacity: 0.75;
+}
+
+.tracker-map-marker-offline .tracker-map-marker-arrow {
+    display: none;
+}
+
+.tracker-map-popup {
+    display: grid;
+    gap: 4px;
+    font-size: 0.86rem;
+    min-width: 160px;
+}
+
+.tracker-map-popup-badges {
+    display: flex;
+    gap: 6px;
+    margin: 2px 0 4px;
+}
+
+.tracker-map-person-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 6px;
+    border-bottom: 1px solid var(--tracker-border);
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.tracker-map-person-row:last-child {
+    border-bottom: 0;
+}
+
+.tracker-map-person-row:hover {
+    background: color-mix(in srgb, var(--tracker-primary) 6%, transparent);
+    border-radius: 14px;
+}
+
+.tracker-map-person-copy {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.35;
+}
+
+.tracker-map-person-copy span {
+    font-size: 0.78rem;
+    color: var(--tracker-muted);
+}

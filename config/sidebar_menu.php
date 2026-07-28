@@ -60,6 +60,8 @@ return [
         'icon' => 'fa-solid fa-briefcase',
         'items' => [
             ['title' => 'Profile', 'icon' => 'fa-solid fa-user-gear', 'route' => 'profile.edit', 'description' => 'Account and security'],
+            ['title' => 'Live Map', 'icon' => 'fa-solid fa-map-location-dot', 'route' => 'live-map.index', 'description' => 'Realtime location of tracked people'],
+            ['title' => 'Share My Location', 'icon' => 'fa-solid fa-location-crosshairs', 'route' => 'my-location.index', 'description' => 'Broadcast this browser\'s position'],
             ['title' => 'My Licenses', 'icon' => 'fa-solid fa-id-badge', 'route' => 'my-licenses.index', 'description' => 'Assigned plans and slots'],
             ['title' => 'My Devices', 'icon' => 'fa-solid fa-mobile-screen-button', 'route' => 'my-devices.index', 'description' => 'Sessions and sign-ins'],
             ['title' => 'Notifications', 'icon' => 'fa-regular fa-bell', 'route' => 'notifications.index', 'description' => 'Alerts and updates', 'badge' => 'unread_notifications'],

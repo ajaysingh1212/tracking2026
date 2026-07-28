@@ -1,0 +1,113 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\DeviceSession;
+use App\Models\TrackingRelation;
+use App\Models\User;
+use Database\Seeders\RoleAndPermissionSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class LiveMapTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_a_user_with_no_tracked_people_sees_an_empty_page(): void
+    {
+        $this->seed(RoleAndPermissionSeeder::class);
+
+        $user = User::factory()->create();
+        $user->assignRole('User');
+
+        $response = $this->actingAs($user)->get(route('live-map.index'));
+
+        $response->assertOk();
+        $response->assertViewHas('people', fn ($people) => $people->isEmpty());
+    }
+
+    public function test_a_regular_user_only_sees_their_tracked_people(): void
+    {
+        $this->seed(RoleAndPermissionSeeder::class);
+
+        $tracker = User::factory()->create();
+        $tracker->assignRole('User');
+
+        $tracked = User::factory()->create();
+        $stranger = User::factory()->create();
+
+        TrackingRelation::create([
+            'tracker_user_id' => $tracker->id,
+            'tracked_user_id' => $tracked->id,
+            'relationship_name' => 'Test Relation',
+            'status' => 'active',
+        ]);
+
+        $response = $this->actingAs($tracker)->get(route('live-map.index'));
+
+        $response->assertOk();
+        $response->assertViewHas('people', function ($people) use ($tracked, $stranger) {
+            $ids = $people->pluck('id');
+
+            return $ids->contains($tracked->id) && ! $ids->contains($stranger->id);
+        });
+    }
+
+    public function test_a_tracked_person_shows_online_as_soon_as_they_log_in_even_without_a_gps_ping(): void
+    {
+        $this->seed(RoleAndPermissionSeeder::class);
+
+        $tracker = User::factory()->create();
+        $tracker->assignRole('Admin');
+
+        $tracked = User::factory()->create();
+
+        TrackingRelation::create([
+            'tracker_user_id' => $tracker->id,
+            'tracked_user_id' => $tracked->id,
+            'relationship_name' => 'Test Relation',
+            'status' => 'active',
+        ]);
+
+        // Simulate a logged-in, still-active session — exactly what
+        // AuthenticatedSessionController::store() writes on real login —
+        // with no GPS location ever recorded for this user.
+        DeviceSession::create([
+            'user_id' => $tracked->id,
+            'session_id' => 'test-session-id',
+            'device_name' => 'Test Browser',
+            'is_current' => true,
+            'last_login_at' => now(),
+            'last_activity_at' => now(),
+            'logged_out_at' => null,
+        ]);
+
+        $response = $this->actingAs($tracker)->get(route('live-map.index'));
+
+        $response->assertOk();
+        $response->assertViewHas('people', function ($people) use ($tracked) {
+            $person = $people->firstWhere('id', $tracked->id);
+
+            return $person !== null && $person['isOnline'] === true && $person['lat'] === null;
+        });
+    }
+
+    public function test_a_privileged_role_sees_all_users(): void
+    {
+        $this->seed(RoleAndPermissionSeeder::class);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('Super Admin');
+
+        $others = User::factory()->count(3)->create();
+
+        $response = $this->actingAs($admin)->get(route('live-map.index'));
+
+        $response->assertOk();
+        $response->assertViewHas('people', function ($people) use ($others) {
+            $ids = $people->pluck('id');
+
+            return $others->every(fn ($other) => $ids->contains($other->id));
+        });
+    }
+}

@@ -16,7 +16,10 @@ class AddSecurityHeaders
         $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
         $response->headers->set('X-Content-Type-Options', 'nosniff');
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
-        $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+        // geolocation=(self): the Live Map / Share My Location feature needs the
+        // browser to grant this same-origin page geolocation access; camera and
+        // microphone are unused by the app and stay locked down.
+        $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(self)');
         $response->headers->set('X-XSS-Protection', '1; mode=block');
 
         if (app()->environment('production')) {

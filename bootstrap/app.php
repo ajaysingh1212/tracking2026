@@ -9,11 +9,12 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 use Spatie\Permission\Middleware\PermissionMiddleware;
 use Spatie\Permission\Middleware\RoleMiddleware;
 use Spatie\Permission\Middleware\RoleOrPermissionMiddleware;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -21,6 +22,14 @@ return Application::configure(basePath: dirname(__DIR__))
         api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
+    )
+    ->withBroadcasting(
+        __DIR__.'/../routes/channels.php',
+        // EnsureFrontendRequestsAreStateful must run first: it's what bootstraps
+        // session/cookie handling for this route (mirrors what statefulApi()
+        // does for the `api` group below) so a plain browser session — not just
+        // a bearer token — can authorize a private channel subscription.
+        ['middleware' => [EnsureFrontendRequestsAreStateful::class, 'auth:sanctum']],
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
@@ -57,7 +66,11 @@ return Application::configure(basePath: dirname(__DIR__))
                 $throwable instanceof ValidationException => Response::HTTP_UNPROCESSABLE_ENTITY,
                 $throwable instanceof AuthenticationException => Response::HTTP_UNAUTHORIZED,
                 $throwable instanceof AuthorizationException => Response::HTTP_FORBIDDEN,
-                $throwable instanceof NotFoundHttpException => Response::HTTP_NOT_FOUND,
+                // Symfony HTTP exceptions (AccessDeniedHttpException, NotFoundHttpException,
+                // TooManyRequestsHttpException, etc.) already carry the correct status —
+                // e.g. Laravel's broadcaster throws AccessDeniedHttpException (403) for a
+                // denied channel, which is neither AuthorizationException nor "unexpected".
+                $throwable instanceof HttpExceptionInterface => $throwable->getStatusCode(),
                 default => Response::HTTP_INTERNAL_SERVER_ERROR,
             };
 
