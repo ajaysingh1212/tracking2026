@@ -59,6 +59,9 @@ class StoreGpsLocationJob implements ShouldQueue
             [
                 'is_online' => true,
                 'is_gps_enabled' => true,
+                // Reaching this handler means the packet made it to the server, so the
+                // device necessarily had internet at send time.
+                'is_internet_enabled' => true,
                 'battery_level' => $this->location->batteryLevel,
                 'network_type' => $this->location->networkType,
                 'last_location_id' => $gpsLocation->id,

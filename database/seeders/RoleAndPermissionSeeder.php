@@ -21,6 +21,7 @@ class RoleAndPermissionSeeder extends Seeder
             'manage license plans',
             'manage user licenses',
             'manage tracking relations',
+            'manage geofences',
             'manage settings',
             'manage countries',
             'manage states',
@@ -50,6 +51,7 @@ class RoleAndPermissionSeeder extends Seeder
             'manage license plans',
             'manage user licenses',
             'manage tracking relations',
+            'manage geofences',
             'manage settings',
             'view notifications',
             'manage notification templates',
@@ -61,6 +63,7 @@ class RoleAndPermissionSeeder extends Seeder
             'view dashboard',
             'manage user licenses',
             'manage tracking relations',
+            'manage geofences',
             'view notifications',
             'manage support tickets',
         ]);

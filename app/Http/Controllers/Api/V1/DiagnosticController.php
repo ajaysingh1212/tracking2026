@@ -46,7 +46,9 @@ class DiagnosticController extends Controller
             'longitude' => $request->filled('longitude') ? $request->float('longitude') : null,
             'reason' => $request->string('reason')->toString() ?: null,
             'duration_seconds' => $request->filled('duration_seconds') ? $request->integer('duration_seconds') : null,
-            'occurred_at' => now(),
+            'network_type' => $request->string('network_type')->toString() ?: null,
+            'battery_level' => $request->filled('battery_level') ? $request->integer('battery_level') : null,
+            'occurred_at' => $request->filled('occurred_at') ? $request->date('occurred_at') : now(),
         ]);
 
         if (in_array($eventType, self::CONCERNING_EVENTS, true)) {

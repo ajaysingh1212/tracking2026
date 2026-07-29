@@ -5,12 +5,14 @@ use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\CityController;
 use App\Http\Controllers\Admin\CountryController;
 use App\Http\Controllers\Admin\DeviceSessionController;
+use App\Http\Controllers\Admin\GeofenceController;
 use App\Http\Controllers\Admin\GeoLookupController;
 use App\Http\Controllers\Admin\GlobalSearchController;
 use App\Http\Controllers\Admin\LanguageController;
 use App\Http\Controllers\Admin\LicensePlanController;
 use App\Http\Controllers\Admin\NotificationLogController;
 use App\Http\Controllers\Admin\NotificationTemplateController;
+use App\Http\Controllers\Admin\MonitoringController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\SettingsController;
@@ -57,6 +59,17 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
             ->except(['show'])
             ->parameters(['tracking-relations' => 'trackingRelation']);
     });
+
+    Route::middleware('permission:manage geofences')->group(function () {
+        Route::get('geofences', [GeofenceController::class, 'index'])->name('geofences.index');
+        Route::get('monitoring/dashboard', [MonitoringController::class, 'dashboard'])->name('monitoring.dashboard');
+        Route::get('monitoring/history', [MonitoringController::class, 'history'])->name('monitoring.history');
+        Route::get('monitoring/replay', [MonitoringController::class, 'replay'])->name('monitoring.replay');
+    });
+
+    // Open to every authenticated user: MonitoringReportAccessService scopes the
+    // visible users/reports to admins (see all tracked) vs regular trackers (see only their own).
+    Route::get('monitoring/reports', [MonitoringController::class, 'reports'])->name('monitoring.reports');
 
     Route::middleware('permission:manage settings')->group(function () {
         Route::get('settings', [SettingsController::class, 'edit'])->name('settings.edit');

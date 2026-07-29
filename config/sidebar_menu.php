@@ -41,6 +41,11 @@ return [
         'label' => 'Monitoring',
         'icon' => 'fa-solid fa-chart-line',
         'items' => [
+            ['title' => 'Geofences', 'icon' => 'fa-solid fa-draw-polygon', 'route' => 'admin.geofences.index', 'permission' => 'manage geofences', 'description' => 'Zones, entry/exit events'],
+            ['title' => 'Analytics', 'icon' => 'fa-solid fa-chart-simple', 'route' => 'admin.monitoring.dashboard', 'permission' => 'manage geofences', 'description' => 'KPIs, trends, leaderboards'],
+            ['title' => 'GPS History', 'icon' => 'fa-solid fa-route', 'route' => 'admin.monitoring.history', 'permission' => 'manage geofences', 'description' => 'History filters and timeline'],
+            ['title' => 'Route Replay', 'icon' => 'fa-solid fa-play', 'route' => 'admin.monitoring.replay', 'permission' => 'manage geofences', 'description' => 'Smooth playback and route stats'],
+            ['title' => 'Reports', 'icon' => 'fa-solid fa-file-export', 'route' => 'admin.monitoring.reports', 'description' => 'Reports and export center'],
             ['title' => 'Activity Logs', 'icon' => 'fa-solid fa-clock-rotate-left', 'route' => 'admin.activity-logs.index', 'permission' => 'view activity logs', 'description' => 'System and login timeline'],
             ['title' => 'Audit Logs', 'icon' => 'fa-solid fa-list-check', 'route' => 'admin.audit-logs.index', 'permission' => 'view audit logs', 'description' => 'Old vs new value trail'],
             ['title' => 'Device Sessions', 'icon' => 'fa-solid fa-display', 'route' => 'admin.device-sessions.index', 'permission' => 'manage device sessions', 'description' => 'Active logins across users'],

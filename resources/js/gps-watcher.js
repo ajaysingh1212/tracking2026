@@ -48,6 +48,8 @@ export class GpsWatcher {
         this.lastSentPosition = null;
         this.flushTimer = null;
         this.permissionStatus = null;
+        this.batteryLevel = null;
+        this.offlineSince = null;
     }
 
     async start() {
@@ -63,6 +65,7 @@ export class GpsWatcher {
             // Keep the default; the server-side optimizer is authoritative anyway.
         }
 
+        this._watchBattery();
         this._watchPermission();
 
         this.watchId = navigator.geolocation.watchPosition(
@@ -73,6 +76,7 @@ export class GpsWatcher {
 
         document.addEventListener('visibilitychange', this._onVisibilityChange);
         window.addEventListener('online', this._onOnline);
+        window.addEventListener('offline', this._onOffline);
         window.addEventListener('beforeunload', this._onBeforeUnload);
 
         this.flushTimer = window.setInterval(() => this._flushQueue(), FLUSH_RETRY_MS);
@@ -92,6 +96,7 @@ export class GpsWatcher {
 
         document.removeEventListener('visibilitychange', this._onVisibilityChange);
         window.removeEventListener('online', this._onOnline);
+        window.removeEventListener('offline', this._onOffline);
         window.removeEventListener('beforeunload', this._onBeforeUnload);
 
         if (this.flushTimer) {
@@ -100,6 +105,16 @@ export class GpsWatcher {
         }
 
         this.onStatus({ state: 'stopped' });
+    }
+
+    _watchBattery() {
+        if (!navigator.getBattery) return;
+
+        navigator.getBattery().then((battery) => {
+            const update = () => { this.batteryLevel = Math.round(battery.level * 100); };
+            update();
+            battery.addEventListener('levelchange', update);
+        }).catch(() => {});
     }
 
     _watchPermission() {
@@ -150,7 +165,7 @@ export class GpsWatcher {
             bearing: heading,
             heading,
             altitude,
-            battery_level: null,
+            battery_level: this.batteryLevel,
             network_type: navigator.connection?.effectiveType ?? null,
             is_mock: false,
             recorded_at: new Date(position.timestamp).toISOString(),
@@ -213,16 +228,33 @@ export class GpsWatcher {
     }
 
     _reportDiagnostic(eventType, extra = {}) {
-        window.axios.post('/api/v1/gps/diagnostics', { event_type: eventType, ...extra }).catch(() => {});
+        window.axios.post('/api/v1/gps/diagnostics', {
+            event_type: eventType,
+            network_type: navigator.connection?.effectiveType ?? null,
+            battery_level: this.batteryLevel,
+            ...extra,
+        }).catch(() => {});
     }
 
     _onVisibilityChange = () => {
         this._reportDiagnostic(document.hidden ? 'browser_hidden' : 'browser_visible');
     };
 
+    // A POST can't reach the server while offline, so the "went offline" moment is
+    // remembered client-side and only reported (with its real timestamp) once the
+    // connection — and therefore the ability to send it — comes back.
     _onOnline = () => {
+        if (this.offlineSince) {
+            this._reportDiagnostic('internet_off', { occurred_at: this.offlineSince });
+            this.offlineSince = null;
+        }
+
         this._reportDiagnostic('internet_on');
         this._flushQueue();
+    };
+
+    _onOffline = () => {
+        this.offlineSince = new Date().toISOString();
     };
 
     _onBeforeUnload = () => {

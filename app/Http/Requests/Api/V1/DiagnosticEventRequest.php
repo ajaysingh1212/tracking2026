@@ -40,6 +40,11 @@ class DiagnosticEventRequest extends FormRequest
             'longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'reason' => ['nullable', 'string', 'max:255'],
             'duration_seconds' => ['nullable', 'integer', 'min:0'],
+            'network_type' => ['nullable', 'string', 'max:20'],
+            'battery_level' => ['nullable', 'integer', 'between:0,100'],
+            // Offline events can only be transmitted once the client is back online,
+            // so the client-observed time (not the server receipt time) is authoritative.
+            'occurred_at' => ['nullable', 'date', 'before_or_equal:now'],
         ];
     }
 }

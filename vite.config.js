@@ -10,6 +10,7 @@ export default defineConfig({
                 'resources/js/gps-watcher.js',
                 'resources/js/live-map.js',
                 'resources/js/private-chat.js',
+                'resources/js/geofence-manager.js',
             ],
             refresh: true,
         }),
