@@ -12,6 +12,8 @@ use App\Models\DeviceSession;
  */
 class UserPresenceService
 {
+    private const ONLINE_GRACE_SECONDS = 90;
+
     public function isOnline(int $userId): bool
     {
         return $this->activeSession($userId) !== null;
@@ -37,6 +39,7 @@ class UserPresenceService
         return DeviceSession::where('user_id', $userId)
             ->where('is_current', true)
             ->whereNull('logged_out_at')
+            ->where('last_activity_at', '>=', now()->subSeconds(self::ONLINE_GRACE_SECONDS))
             ->latest('last_activity_at')
             ->first();
     }

@@ -1,6 +1,7 @@
 @php
     $__menuSections = config('sidebar_menu', []);
     $__unreadCount = auth()->user()->unreadNotifications()->count();
+    $__unreadMessageCount = \App\Models\Message::unreadCountFor(auth()->user());
 @endphp
 
 <ul class="nav sidebar-menu flex-column tracker-sidebar-nav" data-lte-toggle="treeview" data-animation-speed="280" role="menu">

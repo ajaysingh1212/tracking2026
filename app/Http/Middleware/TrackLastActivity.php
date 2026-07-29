@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\DeviceSession;
+use App\Services\UserPresenceService;
 use Closure;
 use Illuminate\Http\Request;
 use Laravel\Sanctum\PersonalAccessToken;
@@ -35,6 +36,10 @@ class TrackLastActivity
                 'last_activity_at' => now(),
                 'is_current' => true,
             ]);
+
+        if ($request->is('presence/heartbeat')) {
+            app(UserPresenceService::class)->broadcastChange($request->user()->id);
+        }
 
         return $response;
     }

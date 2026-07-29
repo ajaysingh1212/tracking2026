@@ -7,6 +7,8 @@ import 'datatables.net-responsive-bs5';
 import Swal from 'sweetalert2';
 import Chart from 'chart.js/auto';
 import { initThemeCustomizer } from './theme-customizer';
+import { initNotificationCenter } from './notifications';
+import { initIncomingCallRinger } from './calls';
 
 window.$ = window.jQuery = $;
 window.Swal = Swal;
@@ -22,6 +24,17 @@ try {
 
 document.addEventListener('DOMContentLoaded', () => {
     initThemeCustomizer();
+    initNotificationCenter();
+    initIncomingCallRinger();
+
+    if (window.__trackerUserId && window.axios) {
+        const sendPresenceHeartbeat = () => {
+            window.axios.post('/presence/heartbeat').catch(() => {});
+        };
+
+        sendPresenceHeartbeat();
+        window.setInterval(sendPresenceHeartbeat, 30000);
+    }
 
     document.querySelectorAll('[data-datatable]').forEach((table) => {
         new DataTable(table, {

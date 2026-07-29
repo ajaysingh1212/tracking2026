@@ -45,9 +45,7 @@
                 <a class="nav-link tracker-icon-btn" data-bs-toggle="dropdown" href="#">
                     <i class="fa-regular fa-bell"></i>
                     @php $__unreadCount = $__currentUser->unreadNotifications()->count(); @endphp
-                    @if ($__unreadCount > 0)
-                        <span class="badge text-bg-primary navbar-badge">{{ $__unreadCount }}</span>
-                    @endif
+                    <span id="notification-bell-badge" class="badge text-bg-primary navbar-badge {{ $__unreadCount > 0 ? '' : 'd-none' }}">{{ $__unreadCount }}</span>
                 </a>
                 <div class="dropdown-menu dropdown-menu-lg dropdown-menu-end tracker-dropdown">
                     <div class="dropdown-header fw-semibold d-flex align-items-center justify-content-between">
@@ -56,13 +54,13 @@
                             <a href="{{ route('notifications.index') }}" class="small">View all</a>
                         @endif
                     </div>
-                    @forelse ($__currentUser->notifications()->latest()->take(5)->get() as $notification)
-                        <div class="dropdown-divider"></div>
-                        <div class="dropdown-item text-wrap small">{{ $notification->data['message'] ?? 'Notification' }}</div>
-                    @empty
-                        <div class="dropdown-divider"></div>
-                        <div class="dropdown-item small text-muted">No notifications available.</div>
-                    @endforelse
+                    <div id="notification-dropdown-list">
+                        @forelse ($__currentUser->notifications()->latest()->take(5)->get() as $notification)
+                            @include('layouts.partials.notification-item')
+                        @empty
+                            <div class="dropdown-item small text-muted" data-notification-empty>No notifications available.</div>
+                        @endforelse
+                    </div>
                 </div>
             </li>
             <li class="nav-item dropdown">

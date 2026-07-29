@@ -7,11 +7,14 @@ use App\Interfaces\Repositories\AuditLogRepositoryInterface;
 use App\Interfaces\Repositories\LicensePlanRepositoryInterface;
 use App\Interfaces\Repositories\UserLicenseRepositoryInterface;
 use App\Interfaces\Repositories\UserRepositoryInterface;
+use App\Models\CallSession;
 use App\Models\City;
+use App\Models\Conversation;
 use App\Models\Country;
 use App\Models\DeviceSession;
 use App\Models\Language;
 use App\Models\LicensePlan;
+use App\Models\Message;
 use App\Models\NotificationTemplate;
 use App\Models\Setting;
 use App\Models\State;
@@ -21,11 +24,14 @@ use App\Models\User;
 use App\Models\UserLicense;
 use App\Observers\AuditableObserver;
 use App\Observers\UserObserver;
+use App\Policies\CallSessionPolicy;
 use App\Policies\CityPolicy;
+use App\Policies\ConversationPolicy;
 use App\Policies\CountryPolicy;
 use App\Policies\DeviceSessionPolicy;
 use App\Policies\LanguagePolicy;
 use App\Policies\LicensePlanPolicy;
+use App\Policies\MessagePolicy;
 use App\Policies\RolePolicy;
 use App\Policies\SettingPolicy;
 use App\Policies\StatePolicy;
@@ -99,5 +105,8 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Setting::class, SettingPolicy::class);
         Gate::policy(DeviceSession::class, DeviceSessionPolicy::class);
         Gate::policy(SupportTicket::class, SupportTicketPolicy::class);
+        Gate::policy(Conversation::class, ConversationPolicy::class);
+        Gate::policy(Message::class, MessagePolicy::class);
+        Gate::policy(CallSession::class, CallSessionPolicy::class);
     }
 }

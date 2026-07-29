@@ -104,6 +104,14 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(DeviceSession::class);
     }
 
+    public function currentActiveSession(): HasOne
+    {
+        return $this->hasOne(DeviceSession::class)
+            ->where('is_current', true)
+            ->whereNull('logged_out_at')
+            ->latestOfMany('last_activity_at');
+    }
+
     public function supportTickets(): HasMany
     {
         return $this->hasMany(SupportTicket::class);
@@ -182,5 +190,10 @@ class User extends Authenticatable implements MustVerifyEmail
     public function trackingPreference(): HasOne
     {
         return $this->hasOne(UserTrackingPreference::class);
+    }
+
+    public function conversationMemberships(): HasMany
+    {
+        return $this->hasMany(ConversationMember::class);
     }
 }

@@ -16,10 +16,10 @@ class AddSecurityHeaders
         $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
         $response->headers->set('X-Content-Type-Options', 'nosniff');
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
-        // geolocation=(self): the Live Map / Share My Location feature needs the
-        // browser to grant this same-origin page geolocation access; camera and
-        // microphone are unused by the app and stay locked down.
-        $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(self)');
+        // geolocation=(self): the Live Map / Share My Location feature needs
+        // location access. Voice/video calling uses same-origin WebRTC, so the
+        // browser must also be allowed to ask for camera/microphone permission.
+        $response->headers->set('Permissions-Policy', 'camera=(self), microphone=(self), geolocation=(self)');
         $response->headers->set('X-XSS-Protection', '1; mode=block');
 
         if (app()->environment('production')) {

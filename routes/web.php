@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ChatController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LiveMapController;
 use App\Http\Controllers\ProfileController;
@@ -18,6 +19,14 @@ Route::get('/dashboard', DashboardController::class)
 Route::get('/live-map', [LiveMapController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('live-map.index');
+
+Route::get('/chats', [ChatController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('chats.index');
+
+Route::post('/presence/heartbeat', fn () => response()->noContent())
+    ->middleware(['auth', 'verified'])
+    ->name('presence.heartbeat');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

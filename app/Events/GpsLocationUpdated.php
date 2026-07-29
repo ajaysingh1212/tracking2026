@@ -7,6 +7,7 @@ use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
+use Illuminate\Contracts\Broadcasting\ShouldRescue;
 use Illuminate\Foundation\Events\Dispatchable;
 
 /**
@@ -16,7 +17,7 @@ use Illuminate\Foundation\Events\Dispatchable;
  * second, separate queued job on the *default* connection, which nothing
  * would be consuming.
  */
-class GpsLocationUpdated implements ShouldBroadcastNow
+class GpsLocationUpdated implements ShouldBroadcastNow, ShouldRescue
 {
     use Dispatchable;
     use InteractsWithSockets;

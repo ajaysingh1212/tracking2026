@@ -21,6 +21,21 @@
         <env name="APP_ENV" value="testing"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
+        <!--
+            "log" instead of "reverb": broadcast() becomes a local, no-op
+            log write instead of a real network push. Without this, every
+            test that creates users/groups/calls/notifications (Faker names,
+            "Team"/"Field Team" fixtures, etc.) broadcasts for real to
+            whatever Reverb server this app's .env points at — including a
+            developer's own live browser session sitting on /chats, which is
+            exactly how random fake "X added you to Team" notifications and
+            phantom incoming calls show up while someone is just using the
+            app normally. BroadcastingChannelTest opts back into the real
+            "reverb" driver for its own tests, since it specifically needs
+            to exercise real channel-authorization logic (which itself never
+            touches the network — only the outbound broadcast() push does).
+        -->
+        <env name="BROADCAST_CONNECTION" value="log"/>
         <env name="CACHE_STORE" value="array"/>
         <env name="DB_CONNECTION" value="sqlite"/>
         <env name="DB_DATABASE" value=":memory:"/>

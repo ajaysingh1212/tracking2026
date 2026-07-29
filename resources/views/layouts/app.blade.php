@@ -17,6 +17,13 @@
             } catch (e) {}
         })();
     </script>
+    @auth
+        <script>
+            window.__trackerUserId = {{ auth()->id() }};
+            window.__trackerUserName = @json(auth()->user()->name);
+            window.__trackerUserAvatar = @json(auth()->user()->avatar ? asset('storage/'.auth()->user()->avatar) : null);
+        </script>
+    @endauth
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('styles')
 </head>
@@ -94,6 +101,10 @@
     </div>
 
     @include('layouts.partials.theme-customizer')
+
+    @auth
+        @include('layouts.partials.incoming-call')
+    @endauth
 
     @stack('scripts')
 </body>

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\TrackingRelation;
 use App\Models\User;
+use App\Notifications\TrackingRequestNotification;
 use Illuminate\Validation\ValidationException;
 
 class TrackingRelationService
@@ -44,6 +45,8 @@ class TrackingRelationService
         $this->activityLogService->log(auth()->user(), 'tracking_relation.created', $relation, [
             'tracker' => $tracker->name,
         ]);
+
+        User::find($attributes['tracked_user_id'])?->notify(new TrackingRequestNotification($relation, $tracker));
 
         return $relation;
     }

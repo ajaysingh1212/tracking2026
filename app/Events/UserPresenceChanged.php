@@ -6,6 +6,7 @@ use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
+use Illuminate\Contracts\Broadcasting\ShouldRescue;
 use Illuminate\Foundation\Events\Dispatchable;
 
 /**
@@ -13,7 +14,7 @@ use Illuminate\Foundation\Events\Dispatchable;
  * private channel sees the online/offline change immediately, without
  * waiting on (or requiring) a GPS ping.
  */
-class UserPresenceChanged implements ShouldBroadcastNow
+class UserPresenceChanged implements ShouldBroadcastNow, ShouldRescue
 {
     use Dispatchable;
     use InteractsWithSockets;
