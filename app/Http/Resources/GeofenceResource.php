@@ -21,6 +21,8 @@ class GeofenceResource extends JsonResource
             'center_lat' => $this->center_lat,
             'center_lng' => $this->center_lng,
             'radius_meters' => $this->radius_meters,
+            'min_speed_kmh' => $this->min_speed_kmh,
+            'max_speed_kmh' => $this->max_speed_kmh,
             'points' => $this->whenLoaded('points', fn () => $this->points->map(fn ($point) => [
                 'latitude' => $point->latitude,
                 'longitude' => $point->longitude,

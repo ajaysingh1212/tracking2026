@@ -95,6 +95,19 @@
                             <input type="color" class="form-control form-control-color w-100" id="geofence-color-input" value="#38bdf8">
                         </div>
                     </div>
+                    <div class="row g-2 mt-1">
+                        <div class="col-6">
+                            <label class="tracker-form-label">Min speed (km/h)</label>
+                            <input type="number" min="0" max="300" class="form-control" id="geofence-min-speed-input" placeholder="No minimum">
+                        </div>
+                        <div class="col-6">
+                            <label class="tracker-form-label">Max speed (km/h)</label>
+                            <input type="number" min="0" max="300" class="form-control" id="geofence-max-speed-input" placeholder="No limit">
+                        </div>
+                        <div class="col-12">
+                            <p class="tracker-card-subtitle mb-0">Speeding inside this zone alerts both the tracked person and whoever tracks them, in realtime.</p>
+                        </div>
+                    </div>
                     <hr>
                     <h6 class="mb-2">Assign routine while creating</h6>
                     <div class="row g-2" id="geofence-create-assignment-fields">

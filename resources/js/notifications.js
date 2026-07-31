@@ -57,6 +57,33 @@ async function markRead(id) {
     await window.axios.post(`/notifications/${id}/read`).catch(() => {});
 }
 
+/**
+ * Shown on whatever page the tracker happens to be on (this module is loaded
+ * app-wide) — the tracked person is blocked from stopping sharing until one
+ * of their trackers actually answers Allow/Deny here.
+ */
+function showStopSharingPrompt(payload) {
+    window.Swal?.fire({
+        icon: 'question',
+        title: 'Stop location sharing?',
+        text: `${payload.requester_name} wants to stop sharing their location with you.`,
+        showCancelButton: true,
+        confirmButtonText: 'Allow',
+        cancelButtonText: 'Deny',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+    }).then((result) => {
+        window.axios.post(`/api/v1/location-sharing/stop-requests/${payload.request_uuid}/respond`, {
+            decision: result.isConfirmed ? 'allow' : 'deny',
+        }).catch(() => {
+            window.Swal?.fire({
+                toast: true, position: 'top-end', timer: 4000, showConfirmButton: false,
+                icon: 'info', title: 'This request was already handled.',
+            });
+        });
+    });
+}
+
 function bindRowClicks(container) {
     container.addEventListener('click', (event) => {
         const row = event.target.closest('[data-notification-id]');
@@ -97,7 +124,17 @@ export function initNotificationCenter() {
         });
     });
 
-    window.Echo.private(`App.Models.User.${userId}`).notification((payload) => {
+    const privateChannel = window.Echo.private(`App.Models.User.${userId}`);
+
+    // Dedicated realtime broadcast — bypasses Laravel's notification
+    // `broadcast` channel, which always queues delivery internally even when
+    // the Notification class itself isn't ShouldQueue. This is what actually
+    // guarantees the Allow/Deny prompt shows up without a queue worker running.
+    privateChannel.listen('.location-share.stop-request-prompt', (payload) => {
+        showStopSharingPrompt(payload);
+    });
+
+    privateChannel.notification((payload) => {
         if (badgeEl) {
             const current = parseInt(badgeEl.textContent || '0', 10) || 0;
             badgeEl.textContent = current + 1;
@@ -111,6 +148,12 @@ export function initNotificationCenter() {
         }
 
         playBeep();
+
+        if (payload.kind === 'location_share_stop_request') {
+            showStopSharingPrompt(payload);
+
+            return;
+        }
 
         if (document.hidden && window.Notification && window.Notification.permission === 'granted') {
             const native = new window.Notification('Tracker Enterprise', { body: payload.message });

@@ -28,6 +28,8 @@ class Geofence extends Model
         'center_lat',
         'center_lng',
         'radius_meters',
+        'min_speed_kmh',
+        'max_speed_kmh',
         'created_by',
         'updated_by',
     ];
@@ -41,6 +43,8 @@ class Geofence extends Model
             'center_lat' => 'float',
             'center_lng' => 'float',
             'radius_meters' => 'integer',
+            'min_speed_kmh' => 'integer',
+            'max_speed_kmh' => 'integer',
         ];
     }
 

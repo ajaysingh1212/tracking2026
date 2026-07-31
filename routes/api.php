@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\V1\GeofenceController;
 use App\Http\Controllers\Api\V1\GpsLocationController;
 use App\Http\Controllers\Api\V1\GroupController;
 use App\Http\Controllers\Api\V1\LicensePlanController;
+use App\Http\Controllers\Api\V1\LocationShareController;
 use App\Http\Controllers\Api\V1\MessageController;
 use App\Http\Controllers\Api\V1\MessageReactionController;
 use App\Http\Controllers\Api\V1\Monitoring\AnalyticsController;
@@ -39,6 +40,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('gps/locations', [GpsLocationController::class, 'store'])->name('gps.locations.store');
         Route::post('gps/locations/batch', [GpsLocationController::class, 'batchStore'])->name('gps.locations.batch');
         Route::post('gps/diagnostics', [DiagnosticController::class, 'store'])->name('gps.diagnostics.store');
+
+        Route::post('location-sharing/stop-request', [LocationShareController::class, 'requestStop'])->name('location-sharing.stop-request');
+        Route::post('location-sharing/stop-requests/{stopRequest:uuid}/respond', [LocationShareController::class, 'respond'])->name('location-sharing.stop-requests.respond');
 
         Route::get('conversations/contacts', [ConversationController::class, 'contacts'])->name('conversations.contacts');
         Route::get('conversations', [ConversationController::class, 'index'])->name('conversations.index');

@@ -4,15 +4,14 @@ namespace App\Notifications;
 
 use App\Models\DiagnosticLog;
 use App\Models\User;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Notification;
 
-class DiagnosticAlertNotification extends Notification implements ShouldQueue
+// Deliberately NOT queued: these alerts are meant to be realtime, and a
+// dev/staging box that isn't running a queue worker would otherwise let
+// them sit unsent in the jobs table indefinitely.
+class DiagnosticAlertNotification extends Notification
 {
-    use Queueable;
-
     public function __construct(
         public readonly DiagnosticLog $log,
         public readonly User $trackedUser,
@@ -34,7 +33,9 @@ class DiagnosticAlertNotification extends Notification implements ShouldQueue
         return [
             'kind' => 'diagnostic_alert',
             'category' => 'diagnostic',
-            'message' => "{$this->trackedUser->name}: {$this->log->event_type->label()}",
+            'message' => $this->log->reason
+                ? "{$this->trackedUser->name}: {$this->log->event_type->label()} — {$this->log->reason}"
+                : "{$this->trackedUser->name}: {$this->log->event_type->label()}",
             'action_url' => route('live-map.index'),
         ];
     }

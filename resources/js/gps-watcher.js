@@ -50,6 +50,7 @@ export class GpsWatcher {
         this.permissionStatus = null;
         this.batteryLevel = null;
         this.offlineSince = null;
+        this.gpsDisabled = false;
     }
 
     async start() {
@@ -67,6 +68,7 @@ export class GpsWatcher {
 
         this._watchBattery();
         this._watchPermission();
+        this._checkAutomation();
 
         this.watchId = navigator.geolocation.watchPosition(
             (position) => this._handlePosition(position),
@@ -117,6 +119,18 @@ export class GpsWatcher {
         }).catch(() => {});
     }
 
+    /**
+     * `navigator.webdriver` is the one honest, standardized signal a browser
+     * exposes about being remote-controlled (Selenium/Puppeteer/Playwright
+     * etc.) — the closest browser-side equivalent to "developer mode", since
+     * there is no web API that reads a device's OS-level Developer Options.
+     */
+    _checkAutomation() {
+        if (navigator.webdriver) {
+            this._reportDiagnostic('automation_detected', { reason: 'navigator.webdriver is true' });
+        }
+    }
+
     _watchPermission() {
         if (!navigator.permissions?.query) return;
 
@@ -131,6 +145,11 @@ export class GpsWatcher {
     }
 
     _handlePosition(position) {
+        if (this.gpsDisabled) {
+            this.gpsDisabled = false;
+            this._reportDiagnostic('gps_enabled');
+        }
+
         const { latitude, longitude, speed, heading, accuracy, altitude } = position.coords;
         const now = Date.now();
 
@@ -221,6 +240,7 @@ export class GpsWatcher {
         if (error.code === error.PERMISSION_DENIED) {
             this._reportDiagnostic('permission_revoked');
         } else {
+            this.gpsDisabled = true;
             this._reportDiagnostic('gps_disabled', { reason: error.message });
         }
 
@@ -291,9 +311,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let watcher = null;
     let sharing = false;
+    let stopRequested = false;
 
     const applyStatus = ({ state, accuracy }) => {
-        if (statusEl) statusEl.textContent = STATUS_LABELS[state] ?? state;
+        if (statusEl && !stopRequested) statusEl.textContent = STATUS_LABELS[state] ?? state;
         if (accuracy !== undefined && accuracy !== null && accuracyEl) {
             accuracyEl.textContent = `${Math.round(accuracy)} m`;
         }
@@ -302,17 +323,66 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    toggle.addEventListener('click', () => {
+    function startSharing() {
+        watcher = new GpsWatcher({ onStatus: applyStatus });
+        watcher.start();
+        sharing = true;
+        stopRequested = false;
+        toggle.disabled = false;
+        if (toggleLabel) toggleLabel.textContent = 'Request to stop sharing';
+    }
+
+    // Sharing starts the moment this page loads — once on, the tracked person
+    // can only *request* to stop (see below); they can't unilaterally kill it.
+    startSharing();
+
+    toggle.addEventListener('click', async () => {
         if (!sharing) {
-            watcher = new GpsWatcher({ onStatus: applyStatus });
-            watcher.start();
-            sharing = true;
-            if (toggleLabel) toggleLabel.textContent = 'Stop Sharing';
-        } else {
-            watcher?.stop();
-            sharing = false;
-            if (toggleLabel) toggleLabel.textContent = 'Start Sharing';
-            if (statusEl) statusEl.textContent = 'Stopped';
+            startSharing();
+
+            return;
+        }
+
+        if (stopRequested) return;
+
+        stopRequested = true;
+        toggle.disabled = true;
+        if (toggleLabel) toggleLabel.textContent = 'Waiting for tracker approval…';
+        if (statusEl) statusEl.textContent = 'Stop requested — waiting for approval';
+
+        try {
+            await window.axios.post('/api/v1/location-sharing/stop-request');
+        } catch (e) {
+            stopRequested = false;
+            toggle.disabled = false;
+            if (toggleLabel) toggleLabel.textContent = 'Request to stop sharing';
+            if (statusEl) statusEl.textContent = STATUS_LABELS.sent;
         }
     });
+
+    if (window.__trackerUserId && window.Echo) {
+        window.Echo.private(`App.Models.User.${window.__trackerUserId}`)
+            .listen('.location-share.stop-resolved', (payload) => {
+                stopRequested = false;
+                toggle.disabled = false;
+
+                if (payload.status === 'approved') {
+                    watcher?.stop();
+                    sharing = false;
+                    if (toggleLabel) toggleLabel.textContent = 'Start Sharing';
+                    if (statusEl) statusEl.textContent = 'Stopped';
+                    window.Swal?.fire({
+                        toast: true, position: 'top-end', timer: 5000, showConfirmButton: false,
+                        icon: 'success', title: `${payload.resolved_by_name} approved — sharing stopped.`,
+                    });
+                } else {
+                    if (toggleLabel) toggleLabel.textContent = 'Request to stop sharing';
+                    if (statusEl) statusEl.textContent = STATUS_LABELS.sent;
+                    window.Swal?.fire({
+                        toast: true, position: 'top-end', timer: 5000, showConfirmButton: false,
+                        icon: 'warning', title: `${payload.resolved_by_name} denied the request — still sharing.`,
+                    });
+                }
+            });
+    }
 });

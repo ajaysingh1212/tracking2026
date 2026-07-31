@@ -74,6 +74,16 @@ class TimelineService
                 'occurred_at' => $message->created_at->toIso8601String(),
             ]);
 
-        return $gps->merge($geofences)->merge($diagnostics)->merge($messages)->sortBy('occurred_at')->values()->all();
+        // The mapped closures above return plain arrays, but a `map()` on an
+        // Eloquent Collection can still stay an Eloquent Collection — whose
+        // merge() assumes Models with getKey(). Rewrap as a base Collection
+        // first so merge() does a plain array merge instead.
+        return collect($gps->all())
+            ->merge($geofences)
+            ->merge($diagnostics)
+            ->merge($messages)
+            ->sortBy('occurred_at')
+            ->values()
+            ->all();
     }
 }

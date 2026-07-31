@@ -2,6 +2,7 @@ import './bootstrap';
 import { Modal } from 'bootstrap';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { mountReportCharts } from './report-charts';
 
 const LIGHT_TILES = {
     url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -64,6 +65,7 @@ class LiveMap {
         this.reportModalEl = document.getElementById('live-map-report-modal');
         this.reportModal = this.reportModalEl ? new Modal(this.reportModalEl) : null;
         this.reportUserId = null;
+        this.reportCharts = null;
 
         const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
         const tiles = isDark ? DARK_TILES : LIGHT_TILES;
@@ -182,6 +184,33 @@ class LiveMap {
 
         channel.listen('.gps.location.updated', (payload) => this._onLocationUpdate(person.id, payload));
         channel.listen('.presence.changed', (payload) => this._onPresenceChange(person.id, payload));
+        channel.listen('.geofence.event', (payload) => this._onGeofenceEvent(person, payload));
+        channel.listen('.geofence.overspeed', (payload) => this._onGeofenceOverspeed(person, payload));
+    }
+
+    _toast(icon, title) {
+        window.Swal?.fire({
+            toast: true,
+            position: 'top-end',
+            timer: 6000,
+            timerProgressBar: true,
+            showConfirmButton: false,
+            icon,
+            title,
+        });
+    }
+
+    _onGeofenceEvent(person, payload) {
+        const who = person.isSelf ? 'You' : person.name;
+        const verb = payload.type === 'entered' ? 'entered' : 'exited';
+
+        this._toast('info', `${who} ${verb} ${payload.geofence.name}`);
+    }
+
+    _onGeofenceOverspeed(person, payload) {
+        const who = person.isSelf ? 'You are' : `${person.name} is`;
+
+        this._toast('warning', `${who} overspeeding in ${payload.geofence.name}: ${payload.speed_kmh} km/h (limit ${payload.limit_kmh} km/h)`);
     }
 
     _onLocationUpdate(personId, payload) {
@@ -371,6 +400,19 @@ class LiveMap {
             timeline: timeline.data.slice(0, 25),
             heatmap: heatmap.data.summary,
         }, null, 2);
+
+        const chartPayload = { report: report.data, analytics: analytics.data, attendance: attendance.data, timeline: timeline.data, heatmap: heatmap.data };
+
+        if (!this.reportCharts) {
+            const root = document.getElementById('live-report-chart-root');
+            const contentBlock = document.getElementById('live-report-content-block');
+
+            if (contentBlock) contentBlock.classList.remove('d-none');
+
+            this.reportCharts = mountReportCharts('live-report', root, contentBlock, chartPayload);
+        } else {
+            this.reportCharts.render(chartPayload);
+        }
     }
 
     _renderReportCards(analytics, attendance, timeline, heatmap, report) {

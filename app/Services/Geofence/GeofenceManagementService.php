@@ -58,6 +58,8 @@ class GeofenceManagementService
                 'center_lat' => $geofence->center_lat,
                 'center_lng' => $geofence->center_lng,
                 'radius_meters' => $geofence->radius_meters,
+                'min_speed_kmh' => $geofence->min_speed_kmh,
+                'max_speed_kmh' => $geofence->max_speed_kmh,
                 'created_by' => $creator->id,
                 'updated_by' => $creator->id,
             ]);
@@ -110,6 +112,8 @@ class GeofenceManagementService
             'center_lat' => $data['center_lat'] ?? null,
             'center_lng' => $data['center_lng'] ?? null,
             'radius_meters' => $data['radius_meters'] ?? null,
+            'min_speed_kmh' => $data['min_speed_kmh'] ?? null,
+            'max_speed_kmh' => $data['max_speed_kmh'] ?? null,
         ];
     }
 

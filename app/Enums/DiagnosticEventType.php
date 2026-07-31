@@ -26,6 +26,8 @@ enum DiagnosticEventType: string
     case WebSocketLost = 'websocket_lost';
     case WebSocketReconnected = 'websocket_reconnected';
     case ServerTimeout = 'server_timeout';
+    case Overspeed = 'overspeed';
+    case AutomationDetected = 'automation_detected';
 
     public function label(): string
     {

@@ -25,6 +25,7 @@ class DiagnosticEventRequest extends FormRequest
         DiagnosticEventType::InternetOn,
         DiagnosticEventType::InternetOff,
         DiagnosticEventType::PoorAccuracy,
+        DiagnosticEventType::AutomationDetected,
     ];
 
     public function authorize(): bool

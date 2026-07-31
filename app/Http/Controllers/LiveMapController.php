@@ -33,36 +33,39 @@ class LiveMapController extends Controller
         // location/status), plus who is currently tracking them.
         $people = $visibleUsers->push($user)->unique('id')
             ->map(function (User $person) use ($user) {
-            $location = GpsLocation::where('user_id', $person->id)->latest('recorded_at')->first();
-            $deviceStatus = DeviceStatus::query()
-                ->whereHas('deviceSession', fn (Builder $query) => $query->where('user_id', $person->id))
-                ->latest('last_ping_at')
-                ->first();
-            $speed = $location?->speed !== null ? (float) $location->speed : null;
-            $isOnline = $this->presenceService->isOnline($person->id);
-            $isSelf = $person->id === $user->id;
+                $location = GpsLocation::where('user_id', $person->id)->latest('recorded_at')->first();
+                $deviceStatus = DeviceStatus::query()
+                    ->whereHas('deviceSession', fn (Builder $query) => $query->where('user_id', $person->id))
+                    ->latest('last_ping_at')
+                    ->first();
+                $speed = $location?->speed !== null ? (float) $location->speed : null;
+                $isOnline = $this->presenceService->isOnline($person->id);
+                $isSelf = $person->id === $user->id;
 
-            return [
-                'id' => $person->id,
-                'name' => $person->name,
-                'isSelf' => $isSelf,
-                'trackedBy' => $isSelf ? $this->trackedByNames($person) : [],
-                'lat' => $location ? (float) $location->latitude : null,
-                'lng' => $location ? (float) $location->longitude : null,
-                'speed' => $speed,
-                'bearing' => $location?->bearing !== null ? (float) $location->bearing : null,
-                'battery' => $deviceStatus?->battery_level ?? $location?->battery_level,
-                'gpsEnabled' => $deviceStatus?->is_gps_enabled,
-                'internetEnabled' => $deviceStatus?->is_internet_enabled,
-                'networkType' => $deviceStatus?->network_type ?? $location?->network_type,
-                'movementStatus' => $speed !== null && $speed > self::MOVING_SPEED_MPS ? 'moving' : 'idle',
-                'isOnline' => $isOnline,
-                'lastSeen' => $location?->recorded_at?->toIso8601String(),
-                'lastActivity' => $this->presenceService->lastActivityAt($person->id),
-                'geofences' => $this->geofencesFor($person),
-            ];
-        })
-            ->filter(fn (array $person) => $person['isOnline'] && $person['lat'] !== null && $person['lng'] !== null)
+                return [
+                    'id' => $person->id,
+                    'name' => $person->name,
+                    'isSelf' => $isSelf,
+                    'trackedBy' => $isSelf ? $this->trackedByNames($person) : [],
+                    'lat' => $location ? (float) $location->latitude : null,
+                    'lng' => $location ? (float) $location->longitude : null,
+                    'speed' => $speed,
+                    'bearing' => $location?->bearing !== null ? (float) $location->bearing : null,
+                    'battery' => $deviceStatus?->battery_level ?? $location?->battery_level,
+                    'gpsEnabled' => $deviceStatus?->is_gps_enabled,
+                    'internetEnabled' => $deviceStatus?->is_internet_enabled,
+                    'networkType' => $deviceStatus?->network_type ?? $location?->network_type,
+                    'movementStatus' => $speed !== null && $speed > self::MOVING_SPEED_MPS ? 'moving' : 'idle',
+                    'isOnline' => $isOnline,
+                    'lastSeen' => $location?->recorded_at?->toIso8601String(),
+                    'lastActivity' => $this->presenceService->lastActivityAt($person->id),
+                    'geofences' => $this->geofencesFor($person),
+                ];
+            })
+            // Offline people still matter here — show their last known fix (greyed out
+            // marker) rather than hiding them the moment they go offline. Only drop
+            // someone who has never reported a location at all (nothing to plot).
+            ->filter(fn (array $person) => $person['lat'] !== null && $person['lng'] !== null)
             ->values();
 
         return view('live-map.index', [

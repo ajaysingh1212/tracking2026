@@ -173,6 +173,8 @@ class GeofenceManager {
         document.getElementById('geofence-description-input').value = existing?.description ?? '';
         document.getElementById('geofence-category-input').value = existing?.category ?? categories[0]?.value ?? 'custom';
         document.getElementById('geofence-color-input').value = existing?.color ?? '#38bdf8';
+        document.getElementById('geofence-min-speed-input').value = existing?.min_speed_kmh ?? '';
+        document.getElementById('geofence-max-speed-input').value = existing?.max_speed_kmh ?? '';
         document.getElementById('geofence-create-assignment-fields')?.classList.toggle('d-none', Boolean(existing));
         this._resetCreateAssignmentFields();
 
@@ -194,11 +196,16 @@ class GeofenceManager {
             return;
         }
 
+        const minSpeed = document.getElementById('geofence-min-speed-input').value;
+        const maxSpeed = document.getElementById('geofence-max-speed-input').value;
+
         const payload = {
             name,
             description: document.getElementById('geofence-description-input').value.trim() || null,
             category: document.getElementById('geofence-category-input').value,
             color: document.getElementById('geofence-color-input').value,
+            min_speed_kmh: minSpeed !== '' ? Number(minSpeed) : null,
+            max_speed_kmh: maxSpeed !== '' ? Number(maxSpeed) : null,
         };
 
         try {

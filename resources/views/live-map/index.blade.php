@@ -116,31 +116,34 @@
                             <button type="button" class="btn tracker-primary-btn" id="live-report-load"><i class="fa-solid fa-rotate"></i></button>
                         </div>
                     </div>
-                    <div class="row g-3 mb-3" id="live-report-cards"></div>
-                    <div class="row g-3 mb-3" id="live-report-menu"></div>
+                    <div id="live-report-chart-root"></div>
+                    <div id="live-report-content-block" class="d-none">
+                        <div class="row g-3 mb-3" id="live-report-cards"></div>
+                        <div class="row g-3 mb-3" id="live-report-menu"></div>
 
-                    <div class="row g-3">
-                        <div class="col-lg-6">
-                            <h6 class="tracker-card-title">Device Diagnostics — GPS / Internet / Battery History</h6>
-                            <div class="tracker-report-table-wrap">
-                                <table class="table table-sm tracker-report-table">
-                                    <thead><tr><th>Event</th><th>Time</th><th>Battery</th><th>Network</th></tr></thead>
-                                    <tbody id="live-report-diagnostics"></tbody>
-                                </table>
+                        <div class="row g-3">
+                            <div class="col-lg-6">
+                                <h6 class="tracker-card-title">Device Diagnostics — GPS / Internet / Battery History</h6>
+                                <div class="tracker-report-table-wrap">
+                                    <table class="table table-sm tracker-report-table">
+                                        <thead><tr><th>Event</th><th>Time</th><th>Battery</th><th>Network</th></tr></thead>
+                                        <tbody id="live-report-diagnostics"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <h6 class="tracker-card-title">Geofence Activity</h6>
+                                <div class="tracker-report-table-wrap">
+                                    <table class="table table-sm tracker-report-table">
+                                        <thead><tr><th>Geofence</th><th>Type</th><th>Time</th></tr></thead>
+                                        <tbody id="live-report-geofence"></tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
-                        <div class="col-lg-6">
-                            <h6 class="tracker-card-title">Geofence Activity</h6>
-                            <div class="tracker-report-table-wrap">
-                                <table class="table table-sm tracker-report-table">
-                                    <thead><tr><th>Geofence</th><th>Type</th><th>Time</th></tr></thead>
-                                    <tbody id="live-report-geofence"></tbody>
-                                </table>
-                            </div>
-                        </div>
+
+                        <pre class="mt-3 mb-0 tracker-report-json" id="live-report-output">Loading...</pre>
                     </div>
-
-                    <pre class="mt-3 mb-0 tracker-report-json" id="live-report-output">Loading...</pre>
                 </div>
             </div>
         </div>

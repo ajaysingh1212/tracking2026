@@ -14,14 +14,14 @@
                 <div class="card-header border-0 bg-transparent">
                     <h3 class="tracker-card-title mb-1">Browser Location Sharing</h3>
                     <p class="tracker-card-subtitle mb-0">
-                        Turn this on to broadcast this browser tab's position to anyone tracking you, exactly
-                        like the mobile app would.
+                        Sharing starts automatically as soon as this page loads. Once it's on, you can't turn it
+                        off yourself — you can only request to stop, and whoever tracks you has to approve it.
                     </p>
                 </div>
                 <div class="card-body">
                     <button type="button" class="btn tracker-primary-btn" id="location-sharing-toggle">
                         <i class="fa-solid fa-location-crosshairs me-2"></i>
-                        <span id="location-sharing-toggle-label">Start Sharing</span>
+                        <span id="location-sharing-toggle-label">Request to stop sharing</span>
                     </button>
 
                     <div class="tracker-mini-list mt-4">
@@ -50,6 +50,10 @@
                     <div class="tracker-notice-item">
                         <div class="tracker-notice-icon"><i class="fa-solid fa-shield-halved"></i></div>
                         <div>Your browser will ask for location permission the first time you start sharing.</div>
+                    </div>
+                    <div class="tracker-notice-item">
+                        <div class="tracker-notice-icon"><i class="fa-solid fa-lock"></i></div>
+                        <div>Requesting to stop sends your tracker(s) a realtime Allow/Deny prompt — sharing only stops once one of them approves it.</div>
                     </div>
                     <div class="tracker-notice-item">
                         <div class="tracker-notice-icon"><i class="fa-solid fa-wifi"></i></div>

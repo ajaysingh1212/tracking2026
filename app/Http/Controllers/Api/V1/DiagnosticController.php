@@ -25,6 +25,7 @@ class DiagnosticController extends Controller
         DiagnosticEventType::WebSocketLost,
         DiagnosticEventType::PermissionRevoked,
         DiagnosticEventType::ServerTimeout,
+        DiagnosticEventType::AutomationDetected,
     ];
 
     public function store(DiagnosticEventRequest $request): JsonResponse

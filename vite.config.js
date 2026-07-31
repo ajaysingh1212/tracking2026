@@ -11,6 +11,7 @@ export default defineConfig({
                 'resources/js/live-map.js',
                 'resources/js/private-chat.js',
                 'resources/js/geofence-manager.js',
+                'resources/js/report-page.js',
             ],
             refresh: true,
         }),

@@ -5,20 +5,30 @@ namespace App\Services\Gps;
 use App\DTO\LocationUpdateData;
 use App\Enums\DiagnosticEventType;
 use App\Enums\TrackingSessionStatus;
+use App\Enums\UserStatus;
 use App\Events\LocationReceived;
 use App\Events\LocationValidated;
 use App\Jobs\StoreGpsLocationJob;
 use App\Models\DeviceSession;
-use App\Models\DiagnosticLog;
 use App\Models\DeviceStatus;
+use App\Models\DiagnosticLog;
 use App\Models\TrackingSession;
 use App\Models\User;
+use App\Notifications\DiagnosticAlertNotification;
 
 class GpsIngestionService
 {
     private const SESSION_GAP_SECONDS = 600;
 
     private const POOR_ACCURACY_METERS = 100.0;
+
+    /**
+     * ~300 km/h — faster than any ordinary ground vehicle can cover between
+     * two consecutive fixes. A jump past this is a strong signal the position
+     * was spoofed/mocked rather than genuinely travelled, regardless of what
+     * the client's own (trivially fakeable) is_mock flag claims.
+     */
+    private const IMPOSSIBLE_SPEED_MPS = 83.3;
 
     public function __construct(
         protected CoordinateOptimizerService $optimizer,
@@ -38,7 +48,7 @@ class GpsIngestionService
         $deviceSession = $this->resolveDeviceSession($user, $dto);
         $status = $deviceSession->status;
 
-        $this->recordPacketDiagnostics($user, $deviceSession, $dto);
+        $this->recordPacketDiagnostics($user, $deviceSession, $dto, $status);
 
         LocationReceived::dispatch($user, $dto);
         LocationValidated::dispatch($user, $dto);
@@ -120,7 +130,7 @@ class GpsIngestionService
         ]);
     }
 
-    private function recordPacketDiagnostics(User $user, DeviceSession $deviceSession, LocationUpdateData $dto): void
+    private function recordPacketDiagnostics(User $user, DeviceSession $deviceSession, LocationUpdateData $dto, ?DeviceStatus $status): void
     {
         if ($dto->isMock) {
             $this->diagnostic($user, $deviceSession, DiagnosticEventType::MockGpsDetected, $dto);
@@ -129,6 +139,63 @@ class GpsIngestionService
         if ($dto->accuracy !== null && $dto->accuracy > self::POOR_ACCURACY_METERS) {
             $this->diagnostic($user, $deviceSession, DiagnosticEventType::PoorAccuracy, $dto);
         }
+
+        $this->detectImpossibleMovement($user, $deviceSession, $dto, $status);
+    }
+
+    /**
+     * Physics-based spoof detector: a client can trivially lie about is_mock,
+     * but it can't make two consecutive real fixes imply a physically
+     * impossible speed. This is the one anti-tamper signal a browser client
+     * genuinely cannot fake around.
+     */
+    private function detectImpossibleMovement(User $user, DeviceSession $deviceSession, LocationUpdateData $dto, ?DeviceStatus $status): void
+    {
+        $last = $status?->lastLocation;
+
+        if (! $last) {
+            return;
+        }
+
+        $seconds = abs($dto->recordedAt->diffInSeconds($last->recorded_at));
+
+        if ($seconds < 1) {
+            return;
+        }
+
+        $distanceMeters = $this->optimizer->distanceInMeters(
+            (float) $last->latitude,
+            (float) $last->longitude,
+            $dto->latitude,
+            $dto->longitude,
+        );
+
+        $impliedSpeedMps = $distanceMeters / $seconds;
+
+        if ($impliedSpeedMps <= self::IMPOSSIBLE_SPEED_MPS) {
+            return;
+        }
+
+        $log = DiagnosticLog::create([
+            'user_id' => $user->id,
+            'device_session_id' => $deviceSession->id,
+            'event_type' => DiagnosticEventType::MockGpsDetected,
+            'latitude' => $dto->latitude,
+            'longitude' => $dto->longitude,
+            'reason' => sprintf(
+                'Jumped %.0fm in %ds (implied %.0f km/h) — likely spoofed/mock location',
+                $distanceMeters,
+                $seconds,
+                $impliedSpeedMps * 3.6,
+            ),
+            'occurred_at' => $dto->recordedAt,
+        ]);
+
+        $trackerIds = $user->trackerRelations()->where('status', UserStatus::Active)->pluck('tracker_user_id');
+
+        User::query()->whereIn('id', $trackerIds)->get()->each(
+            fn (User $tracker) => $tracker->notify(new DiagnosticAlertNotification($log, $user)),
+        );
     }
 
     private function diagnostic(User $user, DeviceSession $deviceSession, DiagnosticEventType $type, LocationUpdateData $dto): void

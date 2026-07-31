@@ -31,6 +31,15 @@ class StoreGeofenceRequest extends FormRequest
             'points' => ['required_if:type,polygon,rectangle', 'array', 'min:3'],
             'points.*.latitude' => ['required_with:points', 'numeric', 'between:-90,90'],
             'points.*.longitude' => ['required_with:points', 'numeric', 'between:-180,180'],
+            'min_speed_kmh' => ['nullable', 'integer', 'min:0', 'max:300'],
+            'max_speed_kmh' => [
+                'nullable', 'integer', 'min:0', 'max:300',
+                function ($attribute, $value, $fail) {
+                    if ($value !== null && $this->filled('min_speed_kmh') && $value < (int) $this->input('min_speed_kmh')) {
+                        $fail('Max speed must be greater than or equal to min speed.');
+                    }
+                },
+            ],
         ];
     }
 }
