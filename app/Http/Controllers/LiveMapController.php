@@ -29,9 +29,7 @@ class LiveMapController extends Controller
 
         $visibleUsers = $this->access->visibleUsers($user);
 
-        // The viewer should also see themselves on their own live map (their own
-        // location/status), plus who is currently tracking them.
-        $people = $visibleUsers->push($user)->unique('id')
+        $people = $visibleUsers->unique('id')
             ->map(function (User $person) use ($user) {
                 $location = GpsLocation::where('user_id', $person->id)->latest('recorded_at')->first();
                 $deviceStatus = DeviceStatus::query()
@@ -62,10 +60,6 @@ class LiveMapController extends Controller
                     'geofences' => $this->geofencesFor($person),
                 ];
             })
-            // Offline people still matter here — show their last known fix (greyed out
-            // marker) rather than hiding them the moment they go offline. Only drop
-            // someone who has never reported a location at all (nothing to plot).
-            ->filter(fn (array $person) => $person['lat'] !== null && $person['lng'] !== null)
             ->values();
 
         return view('live-map.index', [

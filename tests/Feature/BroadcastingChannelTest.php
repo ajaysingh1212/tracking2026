@@ -58,6 +58,23 @@ class BroadcastingChannelTest extends TestCase
         }
     }
 
+    private function authorizeDiagnostics(User $user, User $subject): bool
+    {
+        $request = Request::create('/broadcasting/auth', 'POST', [
+            'socket_id' => '123.456',
+            'channel_name' => 'private-diagnostics.'.$subject->id,
+        ]);
+        $request->setUserResolver(fn () => $user);
+
+        try {
+            Broadcast::driver('reverb')->auth($request);
+
+            return true;
+        } catch (AccessDeniedHttpException) {
+            return false;
+        }
+    }
+
     public function test_a_user_can_authorize_their_own_channel(): void
     {
         $user = User::factory()->create();
@@ -113,5 +130,34 @@ class BroadcastingChannelTest extends TestCase
         $anyone = User::factory()->create();
 
         $this->assertTrue($this->authorize($admin, $anyone));
+    }
+
+    public function test_plain_admin_role_is_not_global_channel_access(): void
+    {
+        $this->seed(RoleAndPermissionSeeder::class);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('Admin');
+
+        $anyone = User::factory()->create();
+
+        $this->assertFalse($this->authorize($admin, $anyone));
+    }
+
+    public function test_diagnostic_channel_uses_relationship_authorization(): void
+    {
+        $tracker = User::factory()->create();
+        $tracked = User::factory()->create();
+        $stranger = User::factory()->create();
+
+        TrackingRelation::create([
+            'tracker_user_id' => $tracker->id,
+            'tracked_user_id' => $tracked->id,
+            'relationship_name' => 'Test Relation',
+            'status' => 'active',
+        ]);
+
+        $this->assertTrue($this->authorizeDiagnostics($tracker, $tracked));
+        $this->assertFalse($this->authorizeDiagnostics($stranger, $tracked));
     }
 }
