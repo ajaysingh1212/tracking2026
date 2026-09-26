@@ -35,7 +35,7 @@
                                         <a href="{{ route('admin.tracking-relations.edit', $relation) }}" class="btn btn-sm tracker-outline-btn"><i class="fa-solid fa-pen"></i></a>
                                     @endcan
                                     @can('delete', $relation)
-                                        <form method="POST" action="{{ route('admin.tracking-relations.destroy', $relation) }}" data-confirm-delete data-confirm-title="Remove this tracking relation?" data-confirm-text="The license slot will be returned if enabled in settings.">
+                                        <form method="POST" action="{{ route('admin.tracking-relations.destroy', $relation) }}" data-confirm-delete data-confirm-title="Remove this tracking relation?" data-confirm-text="The assigned license will stay with this tracked person and its expiry timer will continue.">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i></button>

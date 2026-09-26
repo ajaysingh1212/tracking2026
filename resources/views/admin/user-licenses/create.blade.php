@@ -28,7 +28,7 @@
                         <select id="license_plan_id" name="license_plan_id" class="form-select @error('license_plan_id') is-invalid @enderror" required>
                             <option value="">Select Plan</option>
                             @foreach ($plans as $plan)
-                                <option value="{{ $plan->id }}" @selected(old('license_plan_id') == $plan->id)>{{ $plan->name }} — {{ $plan->maximum_tracking_slots }} slots</option>
+                                <option value="{{ $plan->id }}" @selected(old('license_plan_id') == $plan->id)>{{ $plan->name }} — ₹{{ number_format($plan->price, 2) }}</option>
                             @endforeach
                         </select>
                         @error('license_plan_id')<div class="invalid-feedback">{{ $message }}</div>@enderror

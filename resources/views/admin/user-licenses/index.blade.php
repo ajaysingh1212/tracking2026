@@ -36,7 +36,7 @@
                         <th>License #</th>
                         <th>User</th>
                         <th>Plan</th>
-                        <th>Slots</th>
+                        <th>Assigned Tracked User</th>
                         <th>Expiry</th>
                         <th>Status</th>
                         <th class="text-end">Actions</th>
@@ -48,7 +48,7 @@
                             <td>{{ $license->license_number }}</td>
                             <td>{{ $license->user?->name }}</td>
                             <td>{{ $license->plan?->name }}</td>
-                            <td>{{ $license->remaining_slots }} / {{ $license->remaining_slots + $license->consumed_slots }}</td>
+                            <td>{{ $license->assignedTrackedUser?->name ?? 'Available' }}</td>
                             <td>{{ $license->expiry_date?->format('d M Y') ?? 'Lifetime' }}</td>
                             <td>@include('admin.partials.status-pill', ['status' => $license->status])</td>
                             <td class="text-end">

@@ -4,7 +4,12 @@ namespace App\Services;
 
 use App\Models\TrackingRelation;
 use App\Models\User;
+use App\Models\UserLicense;
 use App\Notifications\TrackingRequestNotification;
+use App\Enums\LicenseStatus;
+use App\Enums\PaymentStatus;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 
 class TrackingRelationService
@@ -16,33 +21,76 @@ class TrackingRelationService
 
     public function create(array $attributes): TrackingRelation
     {
-        $tracker = User::findOrFail($attributes['tracker_user_id']);
-        $license = $tracker->userLicenses()->where('status', 'active')->latest('expiry_date')->first();
+        [$relation, $tracker] = DB::transaction(function () use ($attributes): array {
+            $tracker = User::findOrFail($attributes['tracker_user_id']);
+            $trackedUserId = (int) $attributes['tracked_user_id'];
+            $trashed = TrackingRelation::withTrashed()
+                ->where('tracker_user_id', $tracker->id)
+                ->where('tracked_user_id', $trackedUserId)
+                ->lockForUpdate()
+                ->first();
 
-        if (! $license || $license->remaining_slots < 1) {
-            throw ValidationException::withMessages([
-                'tracker_user_id' => 'The selected tracker has no remaining license slots.',
-            ]);
-        }
+            $license = $trashed?->user_license_id
+                ? UserLicense::query()->whereKey($trashed->user_license_id)->lockForUpdate()->first()
+                : null;
 
-        $trashed = TrackingRelation::withTrashed()
-            ->where('tracker_user_id', $attributes['tracker_user_id'])
-            ->where('tracked_user_id', $attributes['tracked_user_id'])
-            ->onlyTrashed()
-            ->first();
+            if ($license && $license->expiry_date && $license->expiry_date->isPast()) {
+                $license = null;
+            }
 
-        if ($trashed) {
-            $trashed->restore();
-            $trashed->update($attributes);
-            $relation = $trashed;
-        } else {
-            $relation = TrackingRelation::create($attributes);
-        }
+            if (! $license) {
+                $license = UserLicense::query()
+                    ->where('user_id', $tracker->id)
+                    ->where('payment_status', PaymentStatus::Paid)
+                    ->whereIn('status', [LicenseStatus::Pending, LicenseStatus::Active])
+                    ->where(function ($query) use ($trackedUserId): void {
+                        $query->whereNull('assigned_tracked_user_id')
+                            ->orWhere('assigned_tracked_user_id', $trackedUserId);
+                    })
+                    ->where(function ($query): void {
+                        $query->whereNull('expiry_date')->orWhere('expiry_date', '>', now());
+                    })
+                    ->orderByRaw('assigned_tracked_user_id IS NULL')
+                    ->latest('purchase_date')
+                    ->lockForUpdate()
+                    ->first();
+            }
 
-        $license->decrement('remaining_slots');
-        $license->increment('consumed_slots');
+            if (! $license) {
+                throw ValidationException::withMessages([
+                    'tracker_user_id' => 'No valid license is available for this tracked user. Purchase a license to continue.',
+                ]);
+            }
 
-        $this->activityLogService->log(auth()->user(), 'tracking_relation.created', $relation, [
+            if ($license->assigned_tracked_user_id && (int) $license->assigned_tracked_user_id !== $trackedUserId) {
+                throw ValidationException::withMessages([
+                    'tracker_user_id' => 'This license is already assigned to another tracked user.',
+                ]);
+            }
+
+            $license->assigned_tracked_user_id = $trackedUserId;
+            if ($license->status === LicenseStatus::Pending) {
+                app(LicenseService::class)->activateForUse($license);
+            }
+            $license->save();
+
+            $attributes['user_license_id'] = $license->id;
+            if ($trashed?->trashed()) {
+                $trashed->restore();
+                $trashed->update($attributes);
+                $relation = $trashed;
+            } elseif ($trashed) {
+                throw ValidationException::withMessages([
+                    'tracked_user_id' => 'A tracking relation already exists for this user.',
+                ]);
+            } else {
+                $relation = TrackingRelation::create($attributes);
+            }
+
+            return [$relation, $tracker];
+        });
+
+        $this->activityLogService->log(User::query()->find(Auth::id()), 'tracking_relation.created', $relation, [
             'tracker' => $tracker->name,
         ]);
 
@@ -53,22 +101,11 @@ class TrackingRelationService
 
     public function delete(TrackingRelation $relation): void
     {
-        $returnSlot = (bool) $this->settings->get('license', 'return_slots_on_delete', true);
-
-        if ($returnSlot) {
-            $license = $relation->trackerUser->userLicenses()->where('status', 'active')->latest('expiry_date')->first();
-
-            if ($license) {
-                $license->increment('remaining_slots');
-                $license->decrement('consumed_slots');
-            }
-        }
-
         $relation->delete();
 
-        $this->activityLogService->log(auth()->user(), 'tracking_relation.deleted', null, [
+        $this->activityLogService->log(User::query()->find(Auth::id()), 'tracking_relation.deleted', null, [
             'relationship_name' => $relation->relationship_name,
-            'slot_returned' => $returnSlot,
+            'license_id' => $relation->user_license_id,
         ]);
     }
 }

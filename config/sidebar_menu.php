@@ -23,6 +23,7 @@ return [
         'items' => [
             ['title' => 'License Plans', 'icon' => 'fa-solid fa-id-card', 'route' => 'admin.license-plans.index', 'permission' => 'manage license plans', 'description' => 'Packages and pricing'],
             ['title' => 'User Licenses', 'icon' => 'fa-solid fa-file-invoice', 'route' => 'admin.user-licenses.index', 'permission' => 'manage user licenses', 'description' => 'Assigned and active plans'],
+            ['title' => 'License Renewals', 'icon' => 'fa-solid fa-rotate', 'route' => 'admin.license-renewals.index', 'permission' => 'manage user licenses', 'description' => 'Renewal payments and history'],
             ['title' => 'Tracking Relations', 'icon' => 'fa-solid fa-diagram-project', 'route' => 'admin.tracking-relations.index', 'permission' => 'manage tracking relations', 'description' => 'Tracker and tracked pairs'],
         ],
     ],
@@ -68,7 +69,8 @@ return [
             ['title' => 'Live Map', 'icon' => 'fa-solid fa-map-location-dot', 'route' => 'live-map.index', 'description' => 'Realtime location of tracked people'],
             ['title' => 'Private Chats', 'icon' => 'fa-solid fa-comments', 'route' => 'chats.index', 'description' => 'Direct messages with your team', 'badge' => 'unread_messages'],
             ['title' => 'Share My Location', 'icon' => 'fa-solid fa-location-crosshairs', 'route' => 'my-location.index', 'description' => 'Broadcast this browser\'s position'],
-            ['title' => 'My Licenses', 'icon' => 'fa-solid fa-id-badge', 'route' => 'my-licenses.index', 'description' => 'Assigned plans and slots'],
+            ['title' => 'My Tracking', 'icon' => 'fa-solid fa-users', 'route' => 'my-tracking.index', 'description' => 'Tracked people and their licenses'],
+            ['title' => 'My Licenses', 'icon' => 'fa-solid fa-id-badge', 'route' => 'my-licenses.index', 'description' => 'Assigned and available licenses'],
             ['title' => 'My Devices', 'icon' => 'fa-solid fa-mobile-screen-button', 'route' => 'my-devices.index', 'description' => 'Sessions and sign-ins'],
             ['title' => 'Notifications', 'icon' => 'fa-regular fa-bell', 'route' => 'notifications.index', 'description' => 'Alerts and updates', 'badge' => 'unread_notifications'],
             ['title' => 'Support', 'icon' => 'fa-solid fa-headset', 'route' => 'support.index', 'description' => 'Tickets and help'],

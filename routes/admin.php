@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\GeoLookupController;
 use App\Http\Controllers\Admin\GlobalSearchController;
 use App\Http\Controllers\Admin\LanguageController;
 use App\Http\Controllers\Admin\LicensePlanController;
+use App\Http\Controllers\Admin\LicenseRenewalController;
 use App\Http\Controllers\Admin\NotificationLogController;
 use App\Http\Controllers\Admin\NotificationTemplateController;
 use App\Http\Controllers\Admin\MonitoringController;
@@ -46,7 +47,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     });
 
     Route::middleware('permission:manage user licenses')->group(function () {
-        Route::post('user-licenses/{userLicense}/activate', [UserLicenseController::class, 'activate'])->name('user-licenses.activate');
+        Route::get('license-renewals', [LicenseRenewalController::class, 'index'])->name('license-renewals.index');
         Route::post('user-licenses/{userLicense}/extend', [UserLicenseController::class, 'extend'])->name('user-licenses.extend');
         Route::post('user-licenses/{userLicense}/cancel', [UserLicenseController::class, 'cancel'])->name('user-licenses.cancel');
         Route::resource('user-licenses', UserLicenseController::class)

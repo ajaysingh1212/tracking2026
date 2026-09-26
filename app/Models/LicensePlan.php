@@ -20,7 +20,8 @@ class LicensePlan extends Model
         'type',
         'duration_in_days',
         'price',
-        'maximum_tracking_slots',
+        'renewal_price',
+        'is_free',
         'status',
         'description',
         'display_order',
@@ -32,11 +33,18 @@ class LicensePlan extends Model
             'type' => LicenseType::class,
             'status' => UserStatus::class,
             'price' => 'decimal:2',
+            'renewal_price' => 'decimal:2',
+            'is_free' => 'boolean',
         ];
     }
 
     public function userLicenses(): HasMany
     {
         return $this->hasMany(UserLicense::class);
+    }
+
+    public function transactions(): HasMany
+    {
+        return $this->hasMany(LicenseTransaction::class);
     }
 }

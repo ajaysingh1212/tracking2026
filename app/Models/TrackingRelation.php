@@ -17,6 +17,7 @@ class TrackingRelation extends Model
         'uuid',
         'tracker_user_id',
         'tracked_user_id',
+        'user_license_id',
         'relationship_name',
         'status',
         'created_by',
@@ -36,5 +37,10 @@ class TrackingRelation extends Model
     public function trackerUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'tracker_user_id');
+    }
+
+    public function userLicense(): BelongsTo
+    {
+        return $this->belongsTo(UserLicense::class);
     }
 }

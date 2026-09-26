@@ -14,7 +14,7 @@
                 @csrf
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <label class="tracker-form-label" for="tracker_user_id">Tracker (uses a license slot)</label>
+                        <label class="tracker-form-label" for="tracker_user_id">Tracker (license owner)</label>
                         <select id="tracker_user_id" name="tracker_user_id" class="form-select @error('tracker_user_id') is-invalid @enderror" required>
                             <option value="">Select User</option>
                             @foreach ($users as $user)

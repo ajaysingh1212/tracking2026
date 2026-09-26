@@ -6,10 +6,21 @@ use App\Http\Controllers\User\LocationSharingController;
 use App\Http\Controllers\User\NotificationController;
 use App\Http\Controllers\User\SettingsController;
 use App\Http\Controllers\User\SupportTicketController;
+use App\Http\Controllers\User\TrackingRelationController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('my-licenses', [LicenseController::class, 'index'])->name('my-licenses.index');
+    Route::get('my-licenses/plans', [LicenseController::class, 'plans'])->name('my-licenses.plans');
+    Route::post('my-licenses/purchase', [LicenseController::class, 'purchase'])->name('my-licenses.purchase');
+    Route::post('my-licenses/{userLicense}/renew', [LicenseController::class, 'renew'])->name('my-licenses.renew');
+    Route::get('my-licenses/payment/{transaction:uuid}/return', [LicenseController::class, 'paymentReturn'])->name('my-licenses.payment-return');
+    Route::post('my-licenses/payment/{transaction:uuid}/verify', [LicenseController::class, 'verifyRazorpay'])->name('my-licenses.payment-verify');
+
+    Route::get('my-tracking', [TrackingRelationController::class, 'index'])->name('my-tracking.index');
+    Route::get('my-tracking/create', [TrackingRelationController::class, 'create'])->name('my-tracking.create');
+    Route::post('my-tracking', [TrackingRelationController::class, 'store'])->name('my-tracking.store');
+    Route::delete('my-tracking/{trackingRelation}', [TrackingRelationController::class, 'destroy'])->name('my-tracking.destroy');
 
     Route::get('my-location', [LocationSharingController::class, 'index'])->name('my-location.index');
 

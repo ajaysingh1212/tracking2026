@@ -30,15 +30,15 @@
         <div class="col-xl-3 col-md-6">
             <div class="tracker-stat-card">
                 <div class="tracker-stat-icon bg-success-subtle text-success"><i class="fa-solid fa-link"></i></div>
-                <div class="tracker-stat-value">{{ $activeLicense?->remaining_slots ?? 0 }}</div>
-                <div class="tracker-stat-label">Remaining Slots</div>
+                <div class="tracker-stat-value">{{ $stats['availableLicenses'] }}</div>
+                <div class="tracker-stat-label">Available Licenses</div>
             </div>
         </div>
         <div class="col-xl-3 col-md-6">
             <div class="tracker-stat-card">
                 <div class="tracker-stat-icon bg-warning-subtle text-warning"><i class="fa-solid fa-chart-pie"></i></div>
-                <div class="tracker-stat-value">{{ $activeLicense?->consumed_slots ?? 0 }}</div>
-                <div class="tracker-stat-label">Consumed Slots</div>
+                <div class="tracker-stat-value">{{ $stats['trackedUsers'] }}</div>
+                <div class="tracker-stat-label">Tracked Users</div>
             </div>
         </div>
         <div class="col-xl-3 col-md-6">

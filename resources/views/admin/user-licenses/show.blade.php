@@ -20,8 +20,7 @@
                         <div class="tracker-mini-item"><span>Plan</span><strong>{{ $license->plan?->name }}</strong></div>
                         <div class="tracker-mini-item"><span>Status</span>@include('admin.partials.status-pill', ['status' => $license->status])</div>
                         <div class="tracker-mini-item"><span>Payment</span>@include('admin.partials.status-pill', ['status' => $license->payment_status])</div>
-                        <div class="tracker-mini-item"><span>Remaining Slots</span><strong>{{ $license->remaining_slots }}</strong></div>
-                        <div class="tracker-mini-item"><span>Consumed Slots</span><strong>{{ $license->consumed_slots }}</strong></div>
+                        <div class="tracker-mini-item"><span>Assigned Tracked User</span><strong>{{ $license->assignedTrackedUser?->name ?? 'Not assigned' }}</strong></div>
                         <div class="tracker-mini-item"><span>Purchase Date</span><strong>{{ $license->purchase_date?->format('d M Y') }}</strong></div>
                         <div class="tracker-mini-item"><span>Expiry Date</span><strong>{{ $license->expiry_date?->format('d M Y') ?? 'Lifetime' }}</strong></div>
                         <div class="tracker-mini-item"><span>Invoice #</span><strong>{{ $license->invoice_number }}</strong></div>
@@ -38,13 +37,6 @@
                         <h3 class="tracker-card-title mb-0">Actions</h3>
                     </div>
                     <div class="card-body d-flex flex-wrap gap-3">
-                        @if ($license->status->value !== 'active')
-                            <form method="POST" action="{{ route('admin.user-licenses.activate', $license) }}">
-                                @csrf
-                                <button type="submit" class="btn tracker-primary-btn">Activate</button>
-                            </form>
-                        @endif
-
                         <form method="POST" action="{{ route('admin.user-licenses.extend', $license) }}" class="d-flex gap-2">
                             @csrf
                             <input type="number" name="days" min="1" class="form-control" placeholder="Days" style="width: 120px;" required>

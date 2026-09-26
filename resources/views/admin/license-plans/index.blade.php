@@ -19,7 +19,8 @@
                         <th>Type</th>
                         <th>Duration</th>
                         <th>Price</th>
-                        <th>Slots</th>
+                        <th>Renewal Price</th>
+                        <th>Free</th>
                         <th>Status</th>
                         <th class="text-end">Actions</th>
                     </tr>
@@ -33,8 +34,9 @@
                             </td>
                             <td>{{ $plan->type->label() }}</td>
                             <td>{{ $plan->duration_in_days ? $plan->duration_in_days.' days' : 'Lifetime' }}</td>
-                            <td>${{ number_format($plan->price, 2) }}</td>
-                            <td>{{ $plan->maximum_tracking_slots }}</td>
+                            <td><i class="fa-solid fa-indian-rupee-sign me-1" aria-hidden="true"></i>{{ number_format($plan->price, 2) }}</td>
+                            <td><i class="fa-solid fa-indian-rupee-sign me-1" aria-hidden="true"></i>{{ number_format($plan->renewal_price, 2) }}</td>
+                            <td>{{ $plan->is_free ? 'Yes' : 'No' }}</td>
                             <td>@include('admin.partials.status-pill', ['status' => $plan->status])</td>
                             <td class="text-end">
                                 <div class="d-inline-flex gap-2">
@@ -52,7 +54,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="7"><div class="tracker-empty-state"><i class="fa-solid fa-id-card"></i><p class="mb-0">No license plans yet.</p></div></td></tr>
+                        <tr><td colspan="8"><div class="tracker-empty-state"><i class="fa-solid fa-id-card"></i><p class="mb-0">No license plans yet.</p></div></td></tr>
                     @endforelse
                 </tbody>
             </table>

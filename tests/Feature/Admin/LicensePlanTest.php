@@ -30,7 +30,8 @@ class LicensePlanTest extends TestCase
             'type' => 'monthly',
             'duration_in_days' => 30,
             'price' => 49.99,
-            'maximum_tracking_slots' => 10,
+            'renewal_price' => 19.99,
+            'is_free' => false,
             'status' => 'active',
             'display_order' => 1,
         ]);
@@ -48,7 +49,6 @@ class LicensePlanTest extends TestCase
             'type' => 'monthly',
             'duration_in_days' => 30,
             'price' => 19.99,
-            'maximum_tracking_slots' => 5,
             'status' => 'active',
             'display_order' => 1,
         ]);
@@ -58,7 +58,8 @@ class LicensePlanTest extends TestCase
             'type' => 'monthly',
             'duration_in_days' => 30,
             'price' => 29.99,
-            'maximum_tracking_slots' => 8,
+            'renewal_price' => 19.99,
+            'is_free' => false,
             'status' => 'active',
             'display_order' => 1,
         ]);
@@ -75,7 +76,6 @@ class LicensePlanTest extends TestCase
             'name' => 'In Use Plan',
             'type' => 'lifetime',
             'price' => 199,
-            'maximum_tracking_slots' => 50,
             'status' => 'active',
             'display_order' => 1,
         ]);

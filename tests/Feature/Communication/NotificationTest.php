@@ -127,14 +127,13 @@ class NotificationTest extends TestCase
             'type' => 'yearly',
             'duration_in_days' => 365,
             'price' => 99,
-            'maximum_tracking_slots' => 5,
             'status' => 'active',
             'display_order' => 1,
         ]);
 
         $tracker = User::factory()->create();
         $tracked = User::factory()->create();
-        app(LicenseService::class)->purchase($tracker, $plan);
+        app(LicenseService::class)->issueForAdmin($tracker, $plan);
 
         Notification::fake();
 

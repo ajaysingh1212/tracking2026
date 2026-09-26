@@ -7,6 +7,7 @@ use App\Enums\PaymentStatus;
 use App\Traits\HasUuid;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class UserLicense extends Model
@@ -17,14 +18,14 @@ class UserLicense extends Model
     protected $fillable = [
         'uuid',
         'user_id',
+        'assigned_tracked_user_id',
+        'is_free_claim',
         'license_plan_id',
         'license_number',
         'purchase_date',
         'activation_date',
         'expiry_date',
         'status',
-        'remaining_slots',
-        'consumed_slots',
         'payment_status',
         'invoice_number',
         'order_number',
@@ -38,6 +39,7 @@ class UserLicense extends Model
             'expiry_date' => 'datetime',
             'status' => LicenseStatus::class,
             'payment_status' => PaymentStatus::class,
+            'is_free_claim' => 'boolean',
         ];
     }
 
@@ -49,5 +51,20 @@ class UserLicense extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function trackingRelation(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(TrackingRelation::class);
+    }
+
+    public function transactions(): HasMany
+    {
+        return $this->hasMany(LicenseTransaction::class);
+    }
+
+    public function assignedTrackedUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_tracked_user_id');
     }
 }

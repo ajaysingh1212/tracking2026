@@ -167,6 +167,11 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(UserLicense::class);
     }
 
+    public function licenseTransactions(): HasMany
+    {
+        return $this->hasMany(LicenseTransaction::class);
+    }
+
     public function gpsLocations(): HasMany
     {
         return $this->hasMany(GpsLocation::class);

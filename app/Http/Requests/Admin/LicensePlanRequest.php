@@ -22,8 +22,17 @@ class LicensePlanRequest extends FormRequest
             'name' => ['required', 'string', 'max:255', Rule::unique('license_plans', 'name')->ignore($planId)],
             'type' => ['required', new Enum(LicenseType::class)],
             'duration_in_days' => ['nullable', 'integer', 'min:1', 'required_unless:type,lifetime'],
-            'price' => ['required', 'numeric', 'min:0'],
-            'maximum_tracking_slots' => ['required', 'integer', 'min:1'],
+            'price' => ['required', 'numeric', 'min:0', function ($attribute, $value, $fail): void {
+                if ($this->boolean('is_free') && (float) $value !== 0.0) {
+                    $fail('Free license plans must have a price of zero.');
+                }
+            }],
+            'renewal_price' => ['required', 'numeric', 'min:0', function ($attribute, $value, $fail): void {
+                if ($this->boolean('is_free') && (float) $value !== 0.0) {
+                    $fail('Free license plans cannot have a renewal charge.');
+                }
+            }],
+            'is_free' => ['required', 'boolean'],
             'status' => ['required', 'string', 'max:20'],
             'description' => ['nullable', 'string'],
             'display_order' => ['nullable', 'integer', 'min:0'],

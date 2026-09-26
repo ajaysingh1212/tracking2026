@@ -15,7 +15,8 @@ class LicensePlanResource extends JsonResource
             'type' => $this->type?->value,
             'duration_in_days' => $this->duration_in_days,
             'price' => $this->price,
-            'maximum_tracking_slots' => $this->maximum_tracking_slots,
+            'renewal_price' => $this->renewal_price,
+            'is_free' => $this->is_free,
             'status' => $this->status?->value ?? $this->status,
             'description' => $this->description,
         ];

@@ -23,7 +23,7 @@ class UserLicenseController extends Controller
     {
         $this->authorize('viewAny', UserLicense::class);
 
-        $query = UserLicense::with(['user', 'plan'])->latest();
+        $query = UserLicense::with(['user', 'plan', 'assignedTrackedUser'])->latest();
 
         if ($request->filled('user')) {
             $query->where('user_id', $request->integer('user'));
@@ -57,7 +57,7 @@ class UserLicenseController extends Controller
         $user = User::findOrFail($request->validated('user_id'));
         $plan = LicensePlan::findOrFail($request->validated('license_plan_id'));
 
-        $this->licenseService->purchase($user, $plan);
+        $this->licenseService->issueForAdmin($user, $plan);
 
         return redirect()->route('admin.user-licenses.index')->with('status', 'License assigned successfully.');
     }
@@ -66,18 +66,9 @@ class UserLicenseController extends Controller
     {
         $this->authorize('view', $userLicense);
 
-        $userLicense->load(['user', 'plan']);
+        $userLicense->load(['user', 'plan', 'assignedTrackedUser']);
 
         return view('admin.user-licenses.show', ['license' => $userLicense]);
-    }
-
-    public function activate(UserLicense $userLicense): RedirectResponse
-    {
-        $this->authorize('update', $userLicense);
-
-        $this->licenseService->activate($userLicense);
-
-        return back()->with('status', 'License activated.');
     }
 
     public function extend(Request $request, UserLicense $userLicense): RedirectResponse

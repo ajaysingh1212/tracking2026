@@ -42,6 +42,8 @@ class DashboardController extends Controller
                 'notifications' => $user->notifications()->latest()->take(5)->get(),
                 'loginHistory' => $user->failedLogins()->latest('attempted_at')->take(5)->get(),
                 'devices' => $user->userLicenses()->count(),
+                'availableLicenses' => $user->userLicenses()->where('status', 'pending')->where('payment_status', 'paid')->count(),
+                'trackedUsers' => $user->trackedUsers()->where('status', 'active')->count(),
             ],
         ]);
     }

@@ -4,6 +4,7 @@ namespace Tests\Feature\Admin;
 
 use App\Models\LicensePlan;
 use App\Models\User;
+use Illuminate\Support\Carbon;
 use App\Services\LicenseService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
@@ -22,7 +23,7 @@ class TrackingRelationTest extends TestCase
         $this->get(route('admin.tracking-relations.index'))->assertForbidden();
     }
 
-    public function test_creating_a_relation_consumes_a_license_slot_and_deleting_returns_it(): void
+    public function test_a_license_stays_bound_to_the_same_tracked_user_after_relation_deletion(): void
     {
         $this->actingAsSuperAdmin();
         $this->seedSettings();
@@ -33,14 +34,13 @@ class TrackingRelationTest extends TestCase
             'type' => 'yearly',
             'duration_in_days' => 365,
             'price' => 99,
-            'maximum_tracking_slots' => 5,
             'status' => 'active',
             'display_order' => 1,
         ]);
 
         $tracker = User::factory()->create();
         $tracked = User::factory()->create();
-        app(LicenseService::class)->purchase($tracker, $plan);
+        app(LicenseService::class)->issueForAdmin($tracker, $plan);
 
         $createResponse = $this->post(route('admin.tracking-relations.store'), [
             'tracker_user_id' => $tracker->id,
@@ -52,8 +52,9 @@ class TrackingRelationTest extends TestCase
         $createResponse->assertSessionHasNoErrors()->assertRedirect(route('admin.tracking-relations.index'));
 
         $license = $tracker->userLicenses()->first();
-        $this->assertSame(4, $license->remaining_slots);
-        $this->assertSame(1, $license->consumed_slots);
+        $this->assertSame($tracked->id, $license->assigned_tracked_user_id);
+        $this->assertNotNull($license->activation_date);
+        $originalExpiry = $license->expiry_date;
 
         $relation = $tracker->trackedUsers()->first();
         $this->assertNotNull($relation);
@@ -61,12 +62,31 @@ class TrackingRelationTest extends TestCase
         $deleteResponse = $this->delete(route('admin.tracking-relations.destroy', $relation));
         $deleteResponse->assertRedirect(route('admin.tracking-relations.index'));
 
-        $this->assertSame(5, $license->fresh()->remaining_slots);
-        $this->assertSame(0, $license->fresh()->consumed_slots);
+        $this->assertSame($tracked->id, $license->fresh()->assigned_tracked_user_id);
+        $this->assertEquals($originalExpiry, $license->fresh()->expiry_date);
         $this->assertSoftDeleted('tracking_relations', ['id' => $relation->id]);
+
+        $otherTrackedUser = User::factory()->create();
+        $this->post(route('admin.tracking-relations.store'), [
+            'tracker_user_id' => $tracker->id,
+            'tracked_user_id' => $otherTrackedUser->id,
+            'relationship_name' => 'Another Person',
+            'status' => 'active',
+        ])->assertSessionHasErrors('tracker_user_id');
+
+        Carbon::setTestNow(now()->addDays(10));
+        $restoreResponse = $this->post(route('admin.tracking-relations.store'), [
+            'tracker_user_id' => $tracker->id,
+            'tracked_user_id' => $tracked->id,
+            'relationship_name' => 'Field Manager',
+            'status' => 'active',
+        ]);
+        $restoreResponse->assertSessionHasNoErrors();
+        $this->assertEquals($originalExpiry, $license->fresh()->expiry_date);
+        Carbon::setTestNow();
     }
 
-    public function test_creating_a_relation_without_available_slots_fails_validation(): void
+    public function test_creating_a_relation_without_a_license_fails_validation(): void
     {
         $this->actingAsSuperAdmin();
         $tracker = User::factory()->create();

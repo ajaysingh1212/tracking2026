@@ -12,9 +12,15 @@
                 </a>
             </li>
             <li class="nav-item d-none d-sm-flex align-items-center">
-                <div class="tracker-brand-mark">TE</div>
+                <div class="tracker-brand-mark">
+                    @if ($__siteLogo)
+                        <img src="{{ asset('storage/'.$__siteLogo) }}" alt="{{ $__siteName }}">
+                    @else
+                        TE
+                    @endif
+                </div>
                 <div class="ms-3">
-                    <div class="tracker-brand-title">Tracker Enterprise</div>
+                    <div class="tracker-brand-title">{{ $__siteName }}</div>
                     <div class="tracker-brand-subtitle">{{ $__isPrivileged ? 'Admin Control Panel' : 'Employee Workspace' }}</div>
                 </div>
             </li>

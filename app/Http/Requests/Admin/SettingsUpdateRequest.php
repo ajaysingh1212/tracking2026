@@ -15,7 +15,7 @@ class SettingsUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'group' => ['required', 'string', Rule::in(['site', 'system', 'license', 'security', 'appearance'])],
+            'group' => ['required', 'string', Rule::in(['site', 'system', 'license', 'security', 'appearance', 'payments'])],
             'values' => ['nullable', 'array'],
             'logo' => ['nullable', 'image', 'max:2048'],
             'favicon' => ['nullable', 'image', 'max:512'],

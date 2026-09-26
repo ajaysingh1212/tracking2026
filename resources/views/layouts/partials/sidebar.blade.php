@@ -4,10 +4,16 @@
 
 <aside class="app-sidebar tracker-sidebar elevation-0">
     <a href="{{ route('dashboard') }}" class="brand-link tracker-brand-link">
-        <div class="tracker-sidebar-logo">TE</div>
+        <div class="tracker-sidebar-logo">
+            @if ($__siteLogo)
+                <img src="{{ asset('storage/'.$__siteLogo) }}" alt="{{ $__siteName }}">
+            @else
+                TE
+            @endif
+        </div>
         <div class="tracker-brand-copy">
-            <div class="tracker-sidebar-title">Tracker Enterprise</div>
-            <div class="tracker-sidebar-caption">Operational Dashboard</div>
+            <div class="tracker-sidebar-title">{{ $__siteName }}</div>
+            <div class="tracker-sidebar-caption">{{ $__siteSettings['tagline'] ?? 'Operational Dashboard' }}</div>
         </div>
     </a>
 

@@ -8,6 +8,8 @@ use App\Interfaces\Repositories\UserLicenseRepositoryInterface;
 use App\Models\LicensePlan;
 use App\Models\User;
 use App\Models\UserLicense;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
 class LicenseService
@@ -19,46 +21,89 @@ class LicenseService
 
     public function purchase(User $user, LicensePlan $plan): UserLicense
     {
-        $purchaseDate = now();
-        $activationDate = now();
-        $expiryDate = $plan->type->value === 'lifetime'
-            ? null
-            : now()->addDays($plan->duration_in_days);
+        return $this->createLicense($user, $plan, PaymentStatus::Pending);
+    }
 
+    public function issueForAdmin(User $user, LicensePlan $plan): UserLicense
+    {
+        if ($plan->is_free) {
+            return $this->claimFree($user, $plan);
+        }
+
+        return $this->createLicense($user, $plan, PaymentStatus::Paid);
+    }
+
+    public function claimFree(User $user, LicensePlan $plan): UserLicense
+    {
+        if (! $plan->is_free || (float) $plan->price !== 0.0) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'license_plan_id' => 'This plan is not a free license.',
+            ]);
+        }
+
+        return DB::transaction(function () use ($user, $plan): UserLicense {
+            User::query()->whereKey($user->id)->lockForUpdate()->firstOrFail();
+            if ($user->userLicenses()->withTrashed()->where('is_free_claim', true)->exists()) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'license_plan_id' => 'You have already claimed your free license.',
+                ]);
+            }
+
+            return $this->createLicense($user, $plan, PaymentStatus::Paid, true);
+        });
+    }
+
+    protected function createLicense(User $user, LicensePlan $plan, PaymentStatus $paymentStatus, bool $isFreeClaim = false): UserLicense
+    {
         $license = $this->licenses->create([
             'user_id' => $user->id,
             'license_plan_id' => $plan->id,
+            'is_free_claim' => $isFreeClaim,
             'license_number' => strtoupper(Str::random(12)),
-            'purchase_date' => $purchaseDate,
-            'activation_date' => $activationDate,
-            'expiry_date' => $expiryDate,
-            'status' => LicenseStatus::Active,
-            'remaining_slots' => $plan->maximum_tracking_slots,
-            'consumed_slots' => 0,
-            'payment_status' => PaymentStatus::Paid,
-            'invoice_number' => 'INV-'.now()->format('YmdHis'),
-            'order_number' => 'ORD-'.now()->format('YmdHis'),
+            'purchase_date' => now(),
+            'activation_date' => null,
+            'expiry_date' => null,
+            'status' => LicenseStatus::Pending,
+            'payment_status' => $paymentStatus,
+            'invoice_number' => $paymentStatus === PaymentStatus::Paid ? 'INV-'.now()->format('YmdHis').'-'.Str::upper(Str::random(4)) : null,
+            'order_number' => 'ORD-'.now()->format('YmdHis').'-'.Str::upper(Str::random(4)),
         ]);
 
-        $this->activityLogService->log($user, 'license.purchase', $license, [
+        $this->activityLogService->log($user, $paymentStatus === PaymentStatus::Paid ? 'license.issued' : 'license.purchase.started', $license, [
             'plan' => $plan->name,
         ]);
 
         return $license;
     }
 
-    public function activate(UserLicense $license): UserLicense
+    public function activateForUse(UserLicense $license): UserLicense
     {
+        if ($license->payment_status !== PaymentStatus::Paid) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'tracker_user_id' => 'This license has not been paid.',
+            ]);
+        }
+
         $license->update([
             'status' => LicenseStatus::Active,
             'activation_date' => $license->activation_date ?? now(),
+            'expiry_date' => $license->expiry_date ?? $this->expiryFrom($license->plan, now()),
         ]);
 
-        $this->activityLogService->log(auth()->user(), 'license.activated', $license, [
+        $this->activityLogService->log($license->user, 'license.activated', $license, [
             'license_number' => $license->license_number,
         ]);
 
         return $license;
+    }
+
+    public function expiryFrom(LicensePlan $plan, \Illuminate\Support\Carbon $activationDate): ?\Illuminate\Support\Carbon
+    {
+        if ($plan->type->value === 'lifetime') {
+            return null;
+        }
+
+        return $activationDate->copy()->addDays($plan->duration_in_days);
     }
 
     public function extend(UserLicense $license, int $days): UserLicense
@@ -70,7 +115,7 @@ class LicenseService
             'status' => LicenseStatus::Active,
         ]);
 
-        $this->activityLogService->log(auth()->user(), 'license.extended', $license, [
+        $this->activityLogService->log(User::query()->find(Auth::id()), 'license.extended', $license, [
             'license_number' => $license->license_number,
             'days' => $days,
         ]);
@@ -82,7 +127,7 @@ class LicenseService
     {
         $license->update(['status' => LicenseStatus::Cancelled]);
 
-        $this->activityLogService->log(auth()->user(), 'license.cancelled', $license, [
+        $this->activityLogService->log(User::query()->find(Auth::id()), 'license.cancelled', $license, [
             'license_number' => $license->license_number,
         ]);
 

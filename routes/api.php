@@ -27,7 +27,10 @@ use App\Http\Controllers\Api\V1\Monitoring\StatisticsController;
 use App\Http\Controllers\Api\V1\Monitoring\TimelineController;
 use App\Http\Controllers\Api\V1\RouteProposalController;
 use App\Http\Controllers\Api\V1\UserLicenseController;
+use App\Http\Controllers\User\LicenseController as UserLicensePaymentController;
 use Illuminate\Support\Facades\Route;
+
+Route::post('payments/payu/callback', [UserLicensePaymentController::class, 'payuCallback'])->name('payments.payu.callback');
 
 Route::prefix('v1')->name('api.v1.')->group(function () {
     Route::post('auth/login', TokenLoginController::class)->name('auth.login');

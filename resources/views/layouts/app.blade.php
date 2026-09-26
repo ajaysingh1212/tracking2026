@@ -4,7 +4,16 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('page-title', 'Dashboard') · {{ config('app.name', 'Tracker Enterprise') }}</title>
+    @php
+        $__siteSettings = app(\App\Services\SettingsService::class)->forGroup('site');
+        $__siteName = $__siteSettings['name'] ?? config('app.name', 'Tracker Enterprise');
+        $__siteLogo = $__siteSettings['logo'] ?? null;
+        $__siteFavicon = $__siteSettings['favicon'] ?? null;
+    @endphp
+    <title>@yield('page-title', 'Dashboard') · {{ $__siteName }}</title>
+    @if ($__siteFavicon)
+        <link rel="icon" href="{{ asset('storage/'.$__siteFavicon) }}">
+    @endif
     <script>
         (function () {
             try {

@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\SettingsUpdateRequest;
 use App\Models\Setting;
+use App\Models\User;
 use App\Services\ActivityLogService;
 use App\Services\SettingsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
 class SettingsController extends Controller
@@ -35,6 +37,10 @@ class SettingsController extends Controller
         $groupSettings = Setting::where('group', $group)->where('type', '!=', 'file')->get();
 
         foreach ($groupSettings as $setting) {
+            if ($setting->type === 'secret' && blank($request->input("values.{$setting->key}"))) {
+                continue;
+            }
+
             $value = match ($setting->type) {
                 'boolean' => $request->boolean("values.{$setting->key}"),
                 'integer' => (int) $request->input("values.{$setting->key}", 0),
@@ -53,7 +59,7 @@ class SettingsController extends Controller
             $this->storeBrandingFile($request, 'favicon', 'site');
         }
 
-        $this->activityLogService->log(auth()->user(), 'settings.updated', null, ['group' => $group]);
+        $this->activityLogService->log(User::query()->find(Auth::id()), 'settings.updated', null, ['group' => $group]);
 
         return redirect()->route('admin.settings.edit')->with('status', 'Settings updated successfully.');
     }
