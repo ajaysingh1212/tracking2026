@@ -7,6 +7,7 @@ use App\Http\Controllers\User\NotificationController;
 use App\Http\Controllers\User\SettingsController;
 use App\Http\Controllers\User\SupportTicketController;
 use App\Http\Controllers\User\TrackingRelationController;
+use App\Http\Controllers\LicenseTransferController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -14,6 +15,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('my-licenses/plans', [LicenseController::class, 'plans'])->name('my-licenses.plans');
     Route::post('my-licenses/purchase', [LicenseController::class, 'purchase'])->name('my-licenses.purchase');
     Route::post('my-licenses/{userLicense}/renew', [LicenseController::class, 'renew'])->name('my-licenses.renew');
+    Route::post('my-licenses/{userLicense}/use-for-self', [LicenseTransferController::class, 'useForSelf'])->name('my-licenses.use-for-self');
     Route::get('my-licenses/payment/{transaction:uuid}/return', [LicenseController::class, 'paymentReturn'])->name('my-licenses.payment-return');
     Route::post('my-licenses/payment/{transaction:uuid}/verify', [LicenseController::class, 'verifyRazorpay'])->name('my-licenses.payment-verify');
 
@@ -21,6 +23,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('my-tracking/create', [TrackingRelationController::class, 'create'])->name('my-tracking.create');
     Route::post('my-tracking', [TrackingRelationController::class, 'store'])->name('my-tracking.store');
     Route::delete('my-tracking/{trackingRelation}', [TrackingRelationController::class, 'destroy'])->name('my-tracking.destroy');
+
+    Route::get('license-transfers', [LicenseTransferController::class, 'index'])->name('license-transfers.index');
+    Route::get('license-transfers/search-users', [LicenseTransferController::class, 'searchUsers'])->name('license-transfers.search-users');
+    Route::get('license-transfers/available', [LicenseTransferController::class, 'available'])->name('license-transfers.available');
+    Route::post('license-transfers', [LicenseTransferController::class, 'store'])->name('license-transfers.store');
 
     Route::get('my-location', [LocationSharingController::class, 'index'])->name('my-location.index');
 

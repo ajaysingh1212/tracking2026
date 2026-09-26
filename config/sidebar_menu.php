@@ -24,6 +24,7 @@ return [
             ['title' => 'License Plans', 'icon' => 'fa-solid fa-id-card', 'route' => 'admin.license-plans.index', 'permission' => 'manage license plans', 'description' => 'Packages and pricing'],
             ['title' => 'User Licenses', 'icon' => 'fa-solid fa-file-invoice', 'route' => 'admin.user-licenses.index', 'permission' => 'manage user licenses', 'description' => 'Assigned and active plans'],
             ['title' => 'License Renewals', 'icon' => 'fa-solid fa-rotate', 'route' => 'admin.license-renewals.index', 'permission' => 'manage user licenses', 'description' => 'Renewal payments and history'],
+            ['title' => 'License Transfer', 'icon' => 'fa-solid fa-right-left', 'route' => 'license-transfers.index', 'description' => 'Transfer unused licenses securely'],
             ['title' => 'Tracking Relations', 'icon' => 'fa-solid fa-diagram-project', 'route' => 'admin.tracking-relations.index', 'permission' => 'manage tracking relations', 'description' => 'Tracker and tracked pairs'],
         ],
     ],

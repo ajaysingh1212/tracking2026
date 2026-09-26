@@ -12,12 +12,27 @@
                 <p class="tracker-hero-text mb-0">Track your license availability, device footprint, notifications, and account activity from one workspace.</p>
             </div>
             <div class="col-lg-4 text-lg-end">
-                <button class="btn tracker-hero-action mt-3 mt-lg-0">
-                    <i class="fa-solid fa-headset me-2"></i>Support
-                </button>
+                <div class="d-flex flex-wrap justify-content-lg-end gap-2 mt-3 mt-lg-0">
+                    <a href="{{ route('my-licenses.plans') }}" class="btn tracker-hero-action"><i class="fa-solid fa-cart-shopping me-2"></i>Buy License</a>
+                    <a href="{{ route('license-transfers.index') }}" class="btn tracker-hero-action"><i class="fa-solid fa-right-left me-2"></i>Transfer</a>
+                </div>
             </div>
         </div>
     </div>
+
+    @if ($activeLicense?->is_free_claim)
+        <div class="alert alert-info tracker-alert d-flex align-items-center gap-3">
+            <i class="fa-solid fa-flask fs-4"></i>
+            <div><strong>Free demo license</strong> · {{ $activeLicense->plan?->duration_in_days }} day(s), expires {{ $activeLicense->expiry_date?->format('d M Y H:i') ?? 'when activated' }}.</div>
+        </div>
+    @endif
+
+    @foreach ($demoTrackingLicenses as $demoRelation)
+        <div class="alert alert-info tracker-alert d-flex align-items-center gap-3">
+            <i class="fa-solid fa-flask fs-4"></i>
+            <div><strong>Free demo license</strong> · {{ $demoRelation->trackerUser?->name }} is tracking your account. Expires {{ $demoRelation->userLicense?->expiry_date?->format('d M Y H:i') ?? 'soon' }}.</div>
+        </div>
+    @endforeach
 
     <div class="row g-4 mb-4">
         <div class="col-xl-3 col-md-6">

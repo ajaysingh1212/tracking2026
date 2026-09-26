@@ -70,7 +70,7 @@ class TrackingRelationService
 
             $license->assigned_tracked_user_id = $trackedUserId;
             if ($license->status === LicenseStatus::Pending) {
-                app(LicenseService::class)->activateForUse($license);
+                app(LicenseService::class)->activateForUse($license, 'tracking');
             }
             $license->save();
 

@@ -4,6 +4,8 @@ namespace App\Enums;
 
 enum LicenseType: string
 {
+    case Daily = 'daily';
+    case Weekly = 'weekly';
     case Monthly = 'monthly';
     case Quarterly = 'quarterly';
     case HalfYearly = 'half_yearly';
