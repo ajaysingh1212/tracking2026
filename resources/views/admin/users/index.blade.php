@@ -90,20 +90,20 @@
                                     <a href="{{ route('admin.users.show', $user) }}" class="btn btn-sm tracker-outline-btn" title="View"><i class="fa-solid fa-eye"></i></a>
                                     @if (! $user->trashed())
                                         @can('update', $user)
-                                            <a href="{{ route('admin.users.edit', $user) }}" class="btn btn-sm tracker-outline-btn" title="Edit"><i class="fa-solid fa-pen"></i></a>
+                                            <a href="{{ route('admin.users.edit', $user) }}" class="btn btn-sm tracker-outline-btn " title="Edit"><i class="fa-solid fa-pen"></i></a>
                                         @endcan
                                         @can('delete', $user)
                                             <form method="POST" action="{{ route('admin.users.destroy', $user) }}" data-confirm-delete data-confirm-title="Delete this user?" data-confirm-text="{{ $user->name }} will be moved to trash.">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete"><i class="fa-solid fa-trash"></i></button>
+                                                <button type="submit" class="btn btn-sm tracker-outline-btn tracker-outline-btn-danger" title="Delete"><i class="fa-solid fa-trash"></i></button>
                                             </form>
                                         @endcan
                                     @else
                                         @can('restore', $user)
                                             <form method="POST" action="{{ route('admin.users.restore', $user->id) }}">
                                                 @csrf
-                                                <button type="submit" class="btn btn-sm btn-outline-success" title="Restore"><i class="fa-solid fa-rotate-left"></i></button>
+                                                <button type="submit" class="btn btn-sm tracker-outline-btn" title="Restore"><i class="fa-solid fa-rotate-left"></i></button>
                                             </form>
                                         @endcan
                                     @endif
