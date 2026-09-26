@@ -16,6 +16,7 @@ use App\Services\ActivityLogService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 use Spatie\Permission\Models\Role;
 
@@ -57,7 +58,7 @@ class UserController extends Controller
         $user = User::create($data);
         $user->syncRoles($request->validated('roles'));
 
-        $this->activityLogService->log(auth()->user(), 'user.created', $user, ['created_user' => $user->email]);
+        $this->activityLogService->log(User::query()->find(Auth::id()), 'user.created', $user, ['created_user' => $user->email]);
 
         return redirect()->route('admin.users.index')->with('status', 'User created successfully.');
     }
@@ -71,6 +72,8 @@ class UserController extends Controller
         return view('admin.users.show', [
             'user' => $user,
             'licenses' => $user->userLicenses()->with('plan')->latest()->take(5)->get(),
+            'licenseCount' => $user->userLicenses()->count(),
+            'availableLicenseCount' => $user->userLicenses()->where('payment_status', 'paid')->where('status', 'pending')->whereNull('assigned_tracked_user_id')->count(),
             'devices' => $user->deviceSessions()->latest('last_activity_at')->take(5)->get(),
             'activities' => ActivityLog::where('user_id', $user->id)->latest('logged_at')->take(10)->get(),
         ]);
@@ -106,7 +109,7 @@ class UserController extends Controller
 
         $user->save();
 
-        $this->activityLogService->log(auth()->user(), 'user.updated', $user);
+        $this->activityLogService->log(User::query()->find(Auth::id()), 'user.updated', $user);
 
         return redirect()->route('admin.users.index')->with('status', 'User updated successfully.');
     }
@@ -118,7 +121,7 @@ class UserController extends Controller
         $user->update(['status' => UserStatus::Deleted]);
         $user->delete();
 
-        $this->activityLogService->log(auth()->user(), 'user.deleted', $user);
+        $this->activityLogService->log(User::query()->find(Auth::id()), 'user.deleted', $user);
 
         return redirect()->route('admin.users.index')->with('status', 'User moved to trash.');
     }
@@ -132,7 +135,7 @@ class UserController extends Controller
         $user->restore();
         $user->update(['status' => UserStatus::Active]);
 
-        $this->activityLogService->log(auth()->user(), 'user.restored', $user);
+        $this->activityLogService->log(User::query()->find(Auth::id()), 'user.restored', $user);
 
         return redirect()->route('admin.users.index')->with('status', 'User restored successfully.');
     }

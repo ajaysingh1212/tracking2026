@@ -38,7 +38,7 @@ class LicenseController extends Controller
     public function plans(): View
     {
         $user = User::query()->findOrFail(Auth::id());
-        $freeLicenseClaimed = $user->userLicenses()->withTrashed()->where('is_free_claim', true)->exists();
+        $freeLicenseClaimed = app(\App\Services\LicenseService::class)->hasFreeLicenseHistory($user);
 
         return view('user.licenses.plans', [
             'plans' => LicensePlan::query()->where('status', 'active')->orderBy('display_order')->get(),

@@ -14,6 +14,7 @@ class UserLicenseResource extends JsonResource
             'license_number' => $this->license_number,
             'plan' => new LicensePlanResource($this->whenLoaded('plan')),
             'assigned_tracked_user_id' => $this->assigned_tracked_user_id,
+            'usage_type' => $this->usage_type,
             'is_free_claim' => $this->is_free_claim,
             'purchase_date' => $this->purchase_date,
             'activation_date' => $this->activation_date,

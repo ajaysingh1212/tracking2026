@@ -19,7 +19,9 @@ class UserLicense extends Model
         'uuid',
         'user_id',
         'assigned_tracked_user_id',
+        'usage_type',
         'is_free_claim',
+        'free_claimed_by_user_id',
         'license_plan_id',
         'license_number',
         'purchase_date',
@@ -66,5 +68,15 @@ class UserLicense extends Model
     public function assignedTrackedUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_tracked_user_id');
+    }
+
+    public function freeClaimedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'free_claimed_by_user_id');
+    }
+
+    public function transfers(): HasMany
+    {
+        return $this->hasMany(LicenseTransfer::class);
     }
 }

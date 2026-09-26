@@ -56,7 +56,7 @@
                         <tr>
                             <td>{{ $license->license_number }}</td>
                             <td>{{ $license->plan?->name }}</td>
-                            <td>{{ $license->assignedTrackedUser?->name ?? 'Available' }}</td>
+                            <td>{{ $license->usage_type === 'self' ? 'You (personal use)' : ($license->assignedTrackedUser?->name ?? 'Available') }}</td>
                             <td>{{ $license->purchase_date?->format('d M Y') }}</td>
                             <td>{{ $license->expiry_date?->format('d M Y') ?? 'Starts on first use' }}</td>
                             <td>@include('admin.partials.status-pill', ['status' => $license->payment_status])</td>
@@ -69,6 +69,15 @@
                                 @endif
                             </td>
                             <td>
+                                @if ($license->is_free_claim)
+                                    <span class="badge text-bg-info">Free demo · {{ $license->plan?->duration_in_days }} days</span>
+                                @endif
+                                @if ($license->status->value === 'pending' && $license->payment_status->value === 'paid' && ! $license->assigned_tracked_user_id)
+                                    <form method="POST" action="{{ route('my-licenses.use-for-self', $license) }}" class="mb-2">
+                                        @csrf
+                                        <button type="submit" class="btn btn-sm tracker-outline-btn"><i class="fa-solid fa-user-check me-1"></i>Use for me</button>
+                                    </form>
+                                @endif
                                 @if ($license->assigned_tracked_user_id && $license->plan && $license->plan->type->value !== 'lifetime' && ! $license->plan->is_free && $license->status->value !== 'cancelled')
                                     <form method="POST" action="{{ route('my-licenses.renew', $license) }}">
                                         @csrf

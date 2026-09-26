@@ -6,13 +6,14 @@ use App\Models\ActivityLog;
 use App\Models\SupportTicket;
 use App\Models\User;
 use App\Models\UserLicense;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
     public function __invoke(): View
     {
-        $user = auth()->user();
+        $user = User::query()->findOrFail(Auth::id());
 
         if ($user->hasAnyRole(['Super Admin', 'Admin', 'Manager'])) {
             return view('dashboards.admin', [
@@ -33,9 +34,15 @@ class DashboardController extends Controller
         }
 
         $activeLicense = $user->userLicenses()->with('plan')->where('status', 'active')->latest('expiry_date')->first();
+        $demoTrackingLicenses = $user->trackerRelations()
+            ->with(['trackerUser', 'userLicense.plan'])
+            ->where('status', 'active')
+            ->get()
+            ->filter(fn ($relation) => $relation->userLicense?->is_free_claim);
 
         return view('dashboards.user', [
             'activeLicense' => $activeLicense,
+            'demoTrackingLicenses' => $demoTrackingLicenses,
             'stats' => [
                 'recentActivity' => $user->failedLogins()->latest('attempted_at')->take(5)->get(),
                 'supportTickets' => SupportTicket::where('user_id', $user->id)->count(),

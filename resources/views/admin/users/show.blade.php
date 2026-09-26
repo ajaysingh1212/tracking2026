@@ -37,6 +37,8 @@
                 </div>
                 <div class="card-body">
                     <div class="tracker-mini-list">
+                        <div class="tracker-mini-item"><span>Total Licenses</span><strong>{{ $licenseCount }}</strong></div>
+                        <div class="tracker-mini-item"><span>Unused Licenses</span><strong>{{ $availableLicenseCount }}</strong></div>
                         <div class="tracker-mini-item"><span>Employee ID</span><strong>{{ $user->employee_id }}</strong></div>
                         <div class="tracker-mini-item"><span>Roles</span><strong>{{ $user->getRoleNames()->implode(', ') ?: '—' }}</strong></div>
                         <div class="tracker-mini-item"><span>Department</span><strong>{{ $user->department ?? '—' }}</strong></div>
