@@ -20,6 +20,10 @@ Route::get('/live-map', [LiveMapController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('live-map.index');
 
+Route::post('/live-map/self-tracking', [LiveMapController::class, 'toggleSelfTracking'])
+    ->middleware(['auth', 'verified'])
+    ->name('live-map.self-tracking');
+
 Route::get('/chats', [ChatController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('chats.index');

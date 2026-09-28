@@ -9,6 +9,8 @@ use App\Http\Requests\Api\V1\UpdateGeofenceRequest;
 use App\Http\Resources\GeofenceEventResource;
 use App\Http\Resources\GeofenceResource;
 use App\Models\Geofence;
+use App\Models\User;
+use App\Modules\Reports\MonitoringReportAccessService;
 use App\Services\Geofence\GeofenceManagementService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -21,11 +23,25 @@ class GeofenceController extends Controller
         protected GeofenceManagementService $geofenceService,
     ) {}
 
+    public function trackableUsers(Request $request, MonitoringReportAccessService $access): JsonResponse
+    {
+        $this->authorize('viewAny', Geofence::class);
+
+        return response()->json(['data' => $access->visibleUsers($request->user())->map(fn (User $user) => [
+            'id' => $user->id,
+            'name' => $user->name,
+        ])->values()]);
+    }
+
     public function index(Request $request): AnonymousResourceCollection
     {
         $this->authorize('viewAny', Geofence::class);
 
         $query = Geofence::query()->with(['points', 'creator']);
+
+        if (! $request->user()->can('manage geofences')) {
+            $query->where('created_by', $request->user()->id);
+        }
 
         if ($status = $request->string('status')->toString()) {
             $query->where('status', $status);
@@ -121,7 +137,9 @@ class GeofenceController extends Controller
     {
         $this->authorize('viewAny', Geofence::class);
 
-        $geofences = Geofence::query()->with('points')->get();
+        $geofences = Geofence::query()->with('points')
+            ->when(! $request->user()->can('manage geofences'), fn ($query) => $query->where('created_by', $request->user()->id))
+            ->get();
 
         return response()->json(['geofences' => GeofenceResource::collection($geofences)])
             ->header('Content-Disposition', 'attachment; filename="geofences-export.json"');

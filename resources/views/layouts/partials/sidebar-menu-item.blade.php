@@ -7,7 +7,9 @@
         $badge = $__unreadCount;
     } elseif (isset($item['badge']) && $item['badge'] === 'unread_messages' && ($__unreadMessageCount ?? 0) > 0) {
         $badge = $__unreadMessageCount;
-    } elseif (isset($item['badge']) && ! in_array($item['badge'], ['unread_notifications', 'unread_messages'], true)) {
+    } elseif (isset($item['badge']) && $item['badge'] === 'pending_tracking_requests' && ($__pendingTrackingRequestCount ?? 0) > 0) {
+        $badge = $__pendingTrackingRequestCount;
+    } elseif (isset($item['badge']) && ! in_array($item['badge'], ['unread_notifications', 'unread_messages', 'pending_tracking_requests'], true)) {
         $badge = $item['badge'];
     }
 @endphp

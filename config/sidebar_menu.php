@@ -43,7 +43,7 @@ return [
         'label' => 'Monitoring',
         'icon' => 'fa-solid fa-chart-line',
         'items' => [
-            ['title' => 'Geofences', 'icon' => 'fa-solid fa-draw-polygon', 'route' => 'admin.geofences.index', 'permission' => 'manage geofences', 'description' => 'Zones, entry/exit events'],
+            ['title' => 'Geofences', 'icon' => 'fa-solid fa-draw-polygon', 'route' => 'admin.geofences.index', 'permission' => 'manage tracked geofences', 'description' => 'Zones and exit alerts for tracked people'],
             ['title' => 'Analytics', 'icon' => 'fa-solid fa-chart-simple', 'route' => 'admin.monitoring.dashboard', 'permission' => 'manage geofences', 'description' => 'KPIs, trends, leaderboards'],
             ['title' => 'GPS History', 'icon' => 'fa-solid fa-route', 'route' => 'admin.monitoring.history', 'permission' => 'manage geofences', 'description' => 'History filters and timeline'],
             ['title' => 'Route Replay', 'icon' => 'fa-solid fa-play', 'route' => 'admin.monitoring.replay', 'permission' => 'manage geofences', 'description' => 'Smooth playback and route stats'],
@@ -70,7 +70,7 @@ return [
             ['title' => 'Live Map', 'icon' => 'fa-solid fa-map-location-dot', 'route' => 'live-map.index', 'description' => 'Realtime location of tracked people'],
             ['title' => 'Private Chats', 'icon' => 'fa-solid fa-comments', 'route' => 'chats.index', 'description' => 'Direct messages with your team', 'badge' => 'unread_messages'],
             ['title' => 'Share My Location', 'icon' => 'fa-solid fa-location-crosshairs', 'route' => 'my-location.index', 'description' => 'Broadcast this browser\'s position'],
-            ['title' => 'My Tracking', 'icon' => 'fa-solid fa-users', 'route' => 'my-tracking.index', 'description' => 'Tracked people and their licenses'],
+            ['title' => 'Friends & Tracking', 'icon' => 'fa-solid fa-user-group', 'route' => 'my-tracking.index', 'permission' => 'use tracking workspace', 'description' => 'Requests, friends and tracking access', 'badge' => 'pending_tracking_requests'],
             ['title' => 'My Licenses', 'icon' => 'fa-solid fa-id-badge', 'route' => 'my-licenses.index', 'description' => 'Assigned and available licenses'],
             ['title' => 'My Devices', 'icon' => 'fa-solid fa-mobile-screen-button', 'route' => 'my-devices.index', 'description' => 'Sessions and sign-ins'],
             ['title' => 'Notifications', 'icon' => 'fa-regular fa-bell', 'route' => 'notifications.index', 'description' => 'Alerts and updates', 'badge' => 'unread_notifications'],

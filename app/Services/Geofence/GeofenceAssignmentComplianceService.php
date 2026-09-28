@@ -99,7 +99,7 @@ class GeofenceAssignmentComplianceService
 
     private function notifyExit(GeofenceAssignment $assignment, GeofenceEvent $event, Geofence $geofence): void
     {
-        if (! $this->schedule->isWithinWindow($assignment, CarbonImmutable::parse($event->occurred_at))) {
+        if (! $this->schedule->matchesDate($assignment, CarbonImmutable::parse($event->occurred_at)->startOfDay())) {
             return;
         }
 

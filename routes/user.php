@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\LicenseTransferController;
 use App\Http\Controllers\User\DeviceSessionController;
 use App\Http\Controllers\User\LicenseController;
 use App\Http\Controllers\User\LocationSharingController;
@@ -7,7 +8,6 @@ use App\Http\Controllers\User\NotificationController;
 use App\Http\Controllers\User\SettingsController;
 use App\Http\Controllers\User\SupportTicketController;
 use App\Http\Controllers\User\TrackingRelationController;
-use App\Http\Controllers\LicenseTransferController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -19,10 +19,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('my-licenses/payment/{transaction:uuid}/return', [LicenseController::class, 'paymentReturn'])->name('my-licenses.payment-return');
     Route::post('my-licenses/payment/{transaction:uuid}/verify', [LicenseController::class, 'verifyRazorpay'])->name('my-licenses.payment-verify');
 
-    Route::get('my-tracking', [TrackingRelationController::class, 'index'])->name('my-tracking.index');
-    Route::get('my-tracking/create', [TrackingRelationController::class, 'create'])->name('my-tracking.create');
-    Route::post('my-tracking', [TrackingRelationController::class, 'store'])->name('my-tracking.store');
-    Route::delete('my-tracking/{trackingRelation}', [TrackingRelationController::class, 'destroy'])->name('my-tracking.destroy');
+    Route::middleware('permission:use tracking workspace')->group(function () {
+        Route::get('my-tracking', [TrackingRelationController::class, 'index'])->name('my-tracking.index');
+        Route::get('my-tracking/create', [TrackingRelationController::class, 'create'])->name('my-tracking.create');
+        Route::post('my-tracking', [TrackingRelationController::class, 'store'])->name('my-tracking.store');
+        Route::post('my-tracking/managed-users', [TrackingRelationController::class, 'storeManaged'])->name('my-tracking.managed-users.store');
+        Route::post('my-tracking/requests', [TrackingRelationController::class, 'sendRequest'])->name('my-tracking.requests.store');
+        Route::post('my-tracking/{trackingRelation}/accept', [TrackingRelationController::class, 'accept'])->name('my-tracking.requests.accept');
+        Route::post('my-tracking/{trackingRelation}/request-back', [TrackingRelationController::class, 'requestBack'])->name('my-tracking.requests.back');
+        Route::delete('my-tracking/{trackingRelation}/reject', [TrackingRelationController::class, 'reject'])->name('my-tracking.requests.reject');
+        Route::delete('my-tracking/{trackingRelation}', [TrackingRelationController::class, 'destroy'])->name('my-tracking.destroy');
+    });
 
     Route::get('license-transfers', [LicenseTransferController::class, 'index'])->name('license-transfers.index');
     Route::get('license-transfers/search-users', [LicenseTransferController::class, 'searchUsers'])->name('license-transfers.search-users');

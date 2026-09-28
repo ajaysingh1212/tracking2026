@@ -99,6 +99,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::patch('calls/{call:uuid}', [CallController::class, 'update'])->name('calls.update');
 
         Route::get('geofences/export', [GeofenceController::class, 'export'])->name('geofences.export');
+        Route::get('geofences/trackable-users', [GeofenceController::class, 'trackableUsers'])->name('geofences.trackable-users');
         Route::post('geofences/import', [GeofenceController::class, 'import'])->name('geofences.import');
         Route::get('geofences', [GeofenceController::class, 'index'])->name('geofences.index');
         Route::post('geofences', [GeofenceController::class, 'store'])->name('geofences.store');

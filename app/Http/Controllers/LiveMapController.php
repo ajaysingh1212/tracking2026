@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\LicenseStatus;
+use App\Enums\PaymentStatus;
 use App\Enums\UserStatus;
 use App\Models\DeviceStatus;
 use App\Models\GeofenceAssignment;
@@ -9,8 +11,11 @@ use App\Models\GeofenceAssignmentRun;
 use App\Models\GpsLocation;
 use App\Models\User;
 use App\Modules\Reports\MonitoringReportAccessService;
+use App\Services\Geofence\GeofenceGeometryService;
 use App\Services\UserPresenceService;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 class LiveMapController extends Controller
@@ -21,13 +26,25 @@ class LiveMapController extends Controller
     public function __construct(
         protected UserPresenceService $presenceService,
         protected MonitoringReportAccessService $access,
+        protected GeofenceGeometryService $geofenceGeometry,
     ) {}
 
     public function index(): View
     {
         $user = auth()->user();
 
+        $selfTrackingEnabled = (bool) $user->trackingPreference?->self_tracking_enabled;
+        $hasOwnedValidLicense = $user->userLicenses()
+            ->where('payment_status', PaymentStatus::Paid)
+            ->whereIn('status', [LicenseStatus::Pending, LicenseStatus::Active])
+            ->where(fn ($query) => $query->whereNull('expiry_date')->orWhere('expiry_date', '>', now()))
+            ->exists();
+
         $visibleUsers = $this->access->visibleUsers($user);
+
+        if ($selfTrackingEnabled) {
+            $visibleUsers->push($user);
+        }
 
         $people = $visibleUsers->unique('id')
             ->map(function (User $person) use ($user) {
@@ -57,14 +74,49 @@ class LiveMapController extends Controller
                     'isOnline' => $isOnline,
                     'lastSeen' => $location?->recorded_at?->toIso8601String(),
                     'lastActivity' => $this->presenceService->lastActivityAt($person->id),
-                    'geofences' => $this->geofencesFor($person),
+                    'geofences' => $this->geofencesFor($person, $location),
                 ];
             })
             ->values();
 
         return view('live-map.index', [
             'people' => $people,
+            'selfTrackingEnabled' => $selfTrackingEnabled,
+            'hasOwnedValidLicense' => $hasOwnedValidLicense,
+            'trackedBy' => $this->trackedByDetails($user),
+            'hasAvailableLicense' => $user->userLicenses()
+                ->where('payment_status', PaymentStatus::Paid)
+                ->whereIn('status', [LicenseStatus::Pending, LicenseStatus::Active])
+                ->whereNull('assigned_tracked_user_id')
+                ->exists(),
         ]);
+    }
+
+    public function toggleSelfTracking(): RedirectResponse
+    {
+        $user = auth()->user();
+        $preference = $user->trackingPreference()->firstOrCreate([], [
+            'distance_filter_meters' => 25,
+            'tracking_source' => 'automatic',
+        ]);
+
+        if (! $preference->self_tracking_enabled) {
+            $hasLicense = $user->userLicenses()
+                ->where('payment_status', PaymentStatus::Paid)
+                ->whereIn('status', [LicenseStatus::Pending, LicenseStatus::Active])
+                ->where(fn ($query) => $query->whereNull('expiry_date')->orWhere('expiry_date', '>', now()))
+                ->exists();
+
+            if (! $hasLicense) {
+                return back()->withErrors(['self_tracking' => 'A valid license is required to enable self tracking.']);
+            }
+        }
+
+        $preference->update(['self_tracking_enabled' => ! $preference->self_tracking_enabled]);
+
+        return back()->with('status', $preference->self_tracking_enabled
+            ? 'Self tracking enabled. Allow browser location access to save your route.'
+            : 'Self tracking stopped. No new browser location points will be saved from this map.');
     }
 
     /**
@@ -82,10 +134,26 @@ class LiveMapController extends Controller
             ->all();
     }
 
+    private function trackedByDetails(User $person): Collection
+    {
+        return $person->trackerRelations()
+            ->where('status', UserStatus::Active)
+            ->with(['trackerUser', 'userLicense'])
+            ->get()
+            ->map(fn ($relation) => [
+                'relation' => $relation,
+                'user' => $relation->trackerUser,
+                'has_active_license' => $relation->userLicense?->status === LicenseStatus::Active,
+                'reverse_exists' => $person->trackedUsers()
+                    ->where('tracked_user_id', $relation->tracker_user_id)
+                    ->exists(),
+            ]);
+    }
+
     /**
      * @return array<int, array<string, mixed>>
      */
-    private function geofencesFor(User $person): array
+    private function geofencesFor(User $person, ?GpsLocation $location): array
     {
         return GeofenceAssignment::active()
             ->where('user_id', $person->id)
@@ -94,12 +162,13 @@ class LiveMapController extends Controller
             ->orderBy('sequence')
             ->get()
             ->filter(fn (GeofenceAssignment $assignment) => $assignment->geofence !== null)
-            ->map(function (GeofenceAssignment $assignment) {
+            ->map(function (GeofenceAssignment $assignment) use ($location) {
                 /** @var GeofenceAssignmentRun|null $run */
                 $run = $assignment->runs->first();
 
                 return [
                     'assignment_uuid' => $assignment->uuid,
+                    'uuid' => $assignment->geofence->uuid,
                     'name' => $assignment->geofence->name,
                     'type' => $assignment->geofence->type->value,
                     'color' => $assignment->geofence->color,
@@ -120,6 +189,13 @@ class LiveMapController extends Controller
                         'latitude' => $point->latitude,
                         'longitude' => $point->longitude,
                     ]),
+                    'is_outside' => $location
+                        ? ! $this->geofenceGeometry->containsPoint(
+                            $assignment->geofence,
+                            (float) $location->latitude,
+                            (float) $location->longitude,
+                        )
+                        : false,
                 ];
             })
             ->values()

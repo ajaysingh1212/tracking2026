@@ -27,6 +27,14 @@ document.addEventListener('DOMContentLoaded', () => {
     initNotificationCenter();
     initIncomingCallRinger();
 
+    if (window.__trackerSelfTrackingEnabled && !document.getElementById('location-sharing-toggle')) {
+        import('./gps-watcher').then(({ GpsWatcher }) => {
+            if (window.__trackerSelfGpsWatcher) return;
+            window.__trackerSelfGpsWatcher = new GpsWatcher();
+            window.__trackerSelfGpsWatcher.start();
+        });
+    }
+
     if (window.__trackerUserId && window.axios) {
         const sendPresenceHeartbeat = () => {
             window.axios.post('/presence/heartbeat').catch(() => {});
