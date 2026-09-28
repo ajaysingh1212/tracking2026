@@ -390,6 +390,25 @@ body {
     font-weight: 700;
 }
 
+/* Force-center icons inside row-action buttons (view/edit/delete/restore).
+   Fixes eye & pen icons sitting near the top when the button stretches
+   to the row's full height inside the d-inline-flex actions wrapper. */
+.d-inline-flex.gap-2 > .btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    line-height: 1;
+}
+
+.d-inline-flex.gap-2 > .btn i[class*="fa-"] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    margin: 0;
+    transform: translateY(0.5px); /* tiny optical nudge for FA glyph metrics */
+}
+
 .tracker-ghost-btn,
 .tracker-outline-btn {
     background: var(--tracker-surface);
@@ -397,6 +416,17 @@ body {
     border: 1px solid color-mix(in srgb, var(--tracker-primary) 16%, transparent);
 }
 
+/* Delete button: same shape/background as other row-action buttons (tracker-outline-btn),
+   just the icon tinted red so it still reads as a destructive action. */
+.tracker-outline-btn-danger {
+    color: #dc3545;
+}
+
+.tracker-outline-btn-danger:hover {
+    color: #b02a37;
+    border-color: rgba(220, 53, 69, 0.35);
+    background: rgba(220, 53, 69, 0.06);
+}
 .tracker-primary-btn,
 .tracker-hero-action {
     color: #fff;
