@@ -389,7 +389,6 @@ body {
     border-radius: 16px;
     font-weight: 700;
 }
-
 /* Force-center icons inside row-action buttons (view/edit/delete/restore).
    Fixes eye & pen icons sitting near the top when the button stretches
    to the row's full height inside the d-inline-flex actions wrapper. */
