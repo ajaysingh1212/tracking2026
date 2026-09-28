@@ -420,12 +420,14 @@
         </div>
     </div>
 
-    <button type="button" id="call-minimized-bar" class="tracker-call-minimized-bar d-none">
+    <div id="call-minimized-bar" class="tracker-call-minimized-bar d-none" role="dialog" aria-label="Active call">
+        <video id="call-minimized-video" class="tracker-call-minimized-video d-none" autoplay playsinline></video>
         <span class="tracker-call-minimized-avatar" id="call-minimized-avatar"></span>
         <span class="tracker-call-minimized-copy">
             <strong id="call-minimized-name"></strong>
             <span id="call-minimized-timer">00:00</span>
         </span>
+        <button type="button" class="tracker-call-minimized-action" id="call-minimized-mute" title="Mute"><i class="fa-solid fa-microphone"></i></button>
         <span class="tracker-call-minimized-hangup" id="call-minimized-hangup" title="End call"><i class="fa-solid fa-phone-slash"></i></span>
-    </button>
+    </div>
 @endsection

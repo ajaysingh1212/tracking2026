@@ -500,7 +500,7 @@ class GeofenceManager {
 
     async _loadUsers() {
         try {
-            const { data } = await window.axios.get('/api/v1/conversations/contacts');
+            const { data } = await window.axios.get('/api/v1/geofences/trackable-users');
             this.users = data.data ?? [];
 
             const select = document.getElementById('geofence-assignment-user');

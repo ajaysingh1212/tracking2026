@@ -16,27 +16,27 @@ class RelationshipAuthorizationService
     {
         return $actor->is($target)
             || $this->canAdminViewUser($actor, $target)
-            || $this->hasActiveRelationship($actor, $target);
+            || $this->hasActiveTrackingPermission($actor, $target);
     }
 
     public function canTrackUser(User $actor, User $target): bool
     {
         return $this->canAdminViewUser($actor, $target)
-            || $this->hasActiveRelationship($actor, $target);
+            || $this->hasActiveTrackingPermission($actor, $target);
     }
 
     public function canViewDiagnostics(User $actor, User $target): bool
     {
         return $actor->is($target)
             || $this->canAdminViewUser($actor, $target)
-            || $this->hasActiveRelationship($actor, $target);
+            || $this->hasActiveTrackingPermission($actor, $target);
     }
 
     public function canViewLicense(User $actor, User $target): bool
     {
         return $actor->is($target)
             || $this->canAdminViewUser($actor, $target)
-            || $this->hasActiveRelationship($actor, $target);
+            || $this->hasActiveTrackingPermission($actor, $target);
     }
 
     public function canCommunicate(User $actor, User $target): bool
@@ -63,6 +63,15 @@ class RelationshipAuthorizationService
                         ->where('tracked_user_id', $actor->id);
                 });
             })
+            ->exists();
+    }
+
+    private function hasActiveTrackingPermission(User $actor, User $target): bool
+    {
+        return TrackingRelation::query()
+            ->where('tracker_user_id', $actor->id)
+            ->where('tracked_user_id', $target->id)
+            ->where('status', 'active')
             ->exists();
     }
 }

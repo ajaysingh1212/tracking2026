@@ -259,6 +259,7 @@ class PrivateChat {
         this.callMinimizedAvatarEl = document.getElementById('call-minimized-avatar');
         this.callMinimizedNameEl = document.getElementById('call-minimized-name');
         this.callMinimizedTimerEl = document.getElementById('call-minimized-timer');
+        this.callMinimizedVideoEl = document.getElementById('call-minimized-video');
         this.isCallMinimized = false;
         this.pendingAttachment = null;
         this.previewRotation = 0;
@@ -469,13 +470,20 @@ class PrivateChat {
 
         document.getElementById('call-minimize-btn')?.addEventListener('click', () => this._minimizeCall());
         document.getElementById('call-minimized-bar')?.addEventListener('click', (event) => {
-            if (event.target.closest('#call-minimized-hangup')) return;
+            if (event.target.closest('#call-minimized-hangup, #call-minimized-mute')) return;
             this._restoreCall();
+        });
+        document.getElementById('call-minimized-mute')?.addEventListener('click', (event) => {
+            event.stopPropagation();
+            this._toggleMute();
+            const track = this.activeCall?.localStream?.getAudioTracks()[0];
+            event.currentTarget.innerHTML = `<i class="fa-solid ${track?.enabled ? 'fa-microphone' : 'fa-microphone-slash'}"></i>`;
         });
         document.getElementById('call-minimized-hangup')?.addEventListener('click', async (event) => {
             event.stopPropagation();
             await this._hangupCall();
         });
+        this._bindCallMinimizedDrag();
     }
 
     _bindLiveLocationShareModal() {
@@ -3791,7 +3799,34 @@ class PrivateChat {
         this.callMinimizedTimerEl.textContent = this.activeCall.startedAt
             ? this._formatDuration(Date.now() - this.activeCall.startedAt)
             : '00:00';
+        if (this.callMinimizedVideoEl) {
+            const showVideo = this.activeCall.type === 'video' && !!this.activeCall.remoteStream;
+            this.callMinimizedVideoEl.classList.toggle('d-none', !showVideo);
+            this.callMinimizedAvatarEl.classList.toggle('d-none', showVideo);
+            this.callMinimizedVideoEl.srcObject = showVideo ? this.activeCall.remoteStream : null;
+        }
         this.callMinimizedBarEl?.classList.remove('d-none');
+    }
+
+    _bindCallMinimizedDrag() {
+        const bar = this.callMinimizedBarEl;
+        if (!bar) return;
+
+        let origin = null;
+        bar.addEventListener('pointerdown', (event) => {
+            if (event.target.closest('button, #call-minimized-hangup')) return;
+            const rect = bar.getBoundingClientRect();
+            origin = { x: event.clientX - rect.left, y: event.clientY - rect.top };
+            bar.setPointerCapture(event.pointerId);
+        });
+        bar.addEventListener('pointermove', (event) => {
+            if (!origin) return;
+            const left = Math.max(8, Math.min(window.innerWidth - bar.offsetWidth - 8, event.clientX - origin.x));
+            const top = Math.max(8, Math.min(window.innerHeight - bar.offsetHeight - 8, event.clientY - origin.y));
+            Object.assign(bar.style, { left: `${left}px`, top: `${top}px`, right: 'auto', bottom: 'auto' });
+        });
+        bar.addEventListener('pointerup', () => { origin = null; });
+        bar.addEventListener('pointercancel', () => { origin = null; });
     }
 
     _restoreCall() {
@@ -3799,6 +3834,7 @@ class PrivateChat {
 
         this.isCallMinimized = false;
         this.callMinimizedBarEl?.classList.add('d-none');
+        if (this.callMinimizedVideoEl) this.callMinimizedVideoEl.srcObject = null;
         this.callOverlayEl.classList.remove('d-none');
     }
 

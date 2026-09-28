@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Enums\UserStatus;
 use App\Models\TrackingRelation;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
@@ -31,11 +32,15 @@ class TrackingRequestNotification extends Notification implements ShouldQueue
      */
     public function toArray(object $notifiable): array
     {
+        $isPending = $this->relation->status === UserStatus::Pending;
+
         return [
             'kind' => 'tracking_request',
             'category' => 'tracking',
-            'message' => "{$this->tracker->name} is now tracking your location",
-            'action_url' => route('live-map.index'),
+            'message' => $isPending
+                ? "{$this->tracker->name} sent you a tracking request"
+                : "{$this->tracker->name} added you to their tracking account",
+            'action_url' => $isPending ? route('my-tracking.index') : route('live-map.index'),
         ];
     }
 

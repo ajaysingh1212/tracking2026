@@ -10,8 +10,10 @@ const LIGHT_TILES = {
 };
 
 const DARK_TILES = {
-    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    // Use the same key-free provider in dark mode. The dark appearance is
+    // applied with CSS so the map does not depend on a paid tile API key.
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
 };
 
 const DEFAULT_CENTER = [20.5937, 78.9629];
@@ -58,6 +60,39 @@ function complianceClass(status) {
     return 'tracker-status-pending';
 }
 
+function distanceMeters(lat1, lng1, lat2, lng2) {
+    const radius = 6371000;
+    const toRadians = (value) => value * Math.PI / 180;
+    const latDelta = toRadians(lat2 - lat1);
+    const lngDelta = toRadians(lng2 - lng1);
+    const a = Math.sin(latDelta / 2) ** 2
+        + Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(lngDelta / 2) ** 2;
+
+    return radius * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function geofenceContains(geofence, lat, lng) {
+    if (geofence.type === 'circle') {
+        return distanceMeters(lat, lng, Number(geofence.center_lat), Number(geofence.center_lng)) <= Number(geofence.radius_meters);
+    }
+
+    const points = geofence.points ?? [];
+    if (points.length < 3) return true;
+
+    let inside = false;
+    for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+        const yi = Number(points[i].latitude);
+        const xi = Number(points[i].longitude);
+        const yj = Number(points[j].latitude);
+        const xj = Number(points[j].longitude);
+        const intersects = ((yi > lat) !== (yj > lat))
+            && (lng < ((xj - xi) * (lat - yi)) / ((yj - yi) || Number.EPSILON) + xi);
+        if (intersects) inside = !inside;
+    }
+
+    return inside;
+}
+
 class LiveMap {
     constructor(containerId, people) {
         this.people = new Map(people.map((person) => [person.id, person]));
@@ -69,6 +104,8 @@ class LiveMap {
 
         const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
         const tiles = isDark ? DARK_TILES : LIGHT_TILES;
+
+        document.getElementById(containerId)?.classList.toggle('tracker-live-map-dark', isDark);
 
         this.map = L.map(containerId, { zoomControl: true }).setView(DEFAULT_CENTER, 5);
         L.tileLayer(tiles.url, { attribution: tiles.attribution, maxZoom: 19 }).addTo(this.map);
@@ -85,6 +122,8 @@ class LiveMap {
         }
 
         people.forEach((person) => this._subscribe(person));
+        people.forEach((person) => this._updateGeofenceState(person));
+        this._renderGeofenceAlerts();
         this._bindReportModal();
     }
 
@@ -205,6 +244,11 @@ class LiveMap {
         const verb = payload.type === 'entered' ? 'entered' : 'exited';
 
         this._toast('info', `${who} ${verb} ${payload.geofence.name}`);
+
+        const geofence = (person.geofences ?? []).find((item) => item.uuid === payload.geofence.uuid);
+        if (geofence) geofence.is_outside = payload.type === 'exited';
+        this._applyGeofenceWarning(person);
+        this._renderGeofenceAlerts();
     }
 
     _onGeofenceOverspeed(person, payload) {
@@ -235,6 +279,8 @@ class LiveMap {
             lastSeen: payload.recorded_at,
         });
 
+        this._updateGeofenceState(person);
+
         let marker = this.markers.get(personId);
 
         if (!marker) {
@@ -254,6 +300,43 @@ class LiveMap {
         }
 
         this._updateListRow(personId, person);
+        this._renderGeofenceAlerts();
+    }
+
+    _updateGeofenceState(person) {
+        if (person.lat === null || person.lat === undefined || person.lng === null || person.lng === undefined) return;
+
+        (person.geofences ?? []).forEach((geofence) => {
+            geofence.is_outside = !geofenceContains(geofence, Number(person.lat), Number(person.lng));
+        });
+        this._applyGeofenceWarning(person);
+    }
+
+    _applyGeofenceWarning(person) {
+        const outside = (person.geofences ?? []).some((geofence) => geofence.is_outside);
+        const row = document.querySelector(`[data-person-row="${person.id}"]`);
+        row?.classList.toggle('tracker-map-person-row-warning', outside);
+        row?.querySelector('[data-field="geofence-warning"]')?.classList.toggle('d-none', !outside);
+        this.markers.get(person.id)?.getElement()?.classList.toggle('tracker-map-marker-warning', outside);
+    }
+
+    _renderGeofenceAlerts() {
+        const root = document.getElementById('live-map-geofence-alerts');
+        if (!root) return;
+
+        const alerts = [];
+        this.people.forEach((person) => {
+            const outside = (person.geofences ?? []).filter((geofence) => geofence.is_outside);
+            if (outside.length) alerts.push({ person, outside });
+        });
+
+        root.classList.toggle('d-none', alerts.length === 0);
+        root.innerHTML = alerts.map(({ person, outside }) => `
+            <div class="tracker-live-map-alert">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <div><strong>${person.name} is outside the assigned geofence</strong><span>${outside.map((item) => item.name).join(', ')}</span></div>
+            </div>
+        `).join('');
     }
 
     _onPresenceChange(personId, payload) {
@@ -507,4 +590,5 @@ document.addEventListener('DOMContentLoaded', () => {
     const people = dataEl ? JSON.parse(dataEl.textContent) : [];
 
     new LiveMap('live-map', people);
+
 });

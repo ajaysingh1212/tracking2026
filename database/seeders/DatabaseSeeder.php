@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
             SettingsSeeder::class,
             LicensePlanSeeder::class,
             UserSeeder::class,
+            DemoUserLicenseSeeder::class,
         ]);
     }
 }

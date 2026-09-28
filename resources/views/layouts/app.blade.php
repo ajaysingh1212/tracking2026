@@ -31,6 +31,7 @@
             window.__trackerUserId = {{ auth()->id() }};
             window.__trackerUserName = @json(auth()->user()->name);
             window.__trackerUserAvatar = @json(auth()->user()->avatar ? asset('storage/'.auth()->user()->avatar) : null);
+            window.__trackerSelfTrackingEnabled = @json((bool) auth()->user()->trackingPreference?->self_tracking_enabled);
         </script>
     @endauth
     @vite(['resources/css/app.css', 'resources/js/app.js'])

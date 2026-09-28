@@ -18,6 +18,8 @@ class GeofenceEvaluationService
 {
     private const OVERSPEED_ALERT_THROTTLE_MINUTES = 5;
 
+    private const OUTSIDE_ALERT_REPEAT_MINUTES = 1;
+
     public function __construct(
         protected GeofenceGeometryService $geometry,
         protected GeofenceAssignmentComplianceService $compliance,
@@ -25,7 +27,12 @@ class GeofenceEvaluationService
 
     public function evaluate(GpsLocation $location): void
     {
-        $geofences = Geofence::active()->with('points')->get();
+        $geofences = Geofence::active()
+            ->whereHas('assignments', fn ($query) => $query
+                ->active()
+                ->where('user_id', $location->user_id))
+            ->with('points')
+            ->get();
 
         if ($geofences->isEmpty()) {
             return;
@@ -49,6 +56,22 @@ class GeofenceEvaluationService
         $isInside = $this->geometry->containsPoint($geofence, (float) $location->latitude, (float) $location->longitude);
         $wasInside = $lastEvent?->type === GeofenceEventType::Entered;
 
+        if (! $isInside && $lastEvent?->type === GeofenceEventType::Exited) {
+            if ($lastEvent->occurred_at->gt($location->recorded_at->clone()->subMinutes(self::OUTSIDE_ALERT_REPEAT_MINUTES))) {
+                return;
+            }
+
+            $this->recordEvent($geofence, $location, GeofenceEventType::Exited);
+
+            return;
+        }
+
+        if (! $isInside && $lastEvent === null) {
+            $this->recordEvent($geofence, $location, GeofenceEventType::Exited);
+
+            return;
+        }
+
         if ($isInside === $wasInside) {
             if ($isInside) {
                 $this->checkOverspeed($geofence, $location);
@@ -57,11 +80,20 @@ class GeofenceEvaluationService
             return;
         }
 
+        $this->recordEvent($geofence, $location, $isInside ? GeofenceEventType::Entered : GeofenceEventType::Exited);
+
+        if ($isInside) {
+            $this->checkOverspeed($geofence, $location);
+        }
+    }
+
+    private function recordEvent(Geofence $geofence, GpsLocation $location, GeofenceEventType $type): void
+    {
         $event = GeofenceEvent::create([
             'geofence_id' => $geofence->id,
             'user_id' => $location->user_id,
             'gps_location_id' => $location->id,
-            'type' => $isInside ? GeofenceEventType::Entered : GeofenceEventType::Exited,
+            'type' => $type,
             'latitude' => $location->latitude,
             'longitude' => $location->longitude,
             'occurred_at' => $location->recorded_at,
@@ -70,10 +102,6 @@ class GeofenceEvaluationService
         broadcast(new GeofenceEventOccurred($event->setRelation('geofence', $geofence)));
 
         $this->compliance->handleGeofenceEvent($event, $geofence);
-
-        if ($isInside) {
-            $this->checkOverspeed($geofence, $location);
-        }
     }
 
     /**

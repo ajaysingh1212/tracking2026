@@ -11,9 +11,9 @@ use App\Http\Controllers\Admin\GlobalSearchController;
 use App\Http\Controllers\Admin\LanguageController;
 use App\Http\Controllers\Admin\LicensePlanController;
 use App\Http\Controllers\Admin\LicenseRenewalController;
+use App\Http\Controllers\Admin\MonitoringController;
 use App\Http\Controllers\Admin\NotificationLogController;
 use App\Http\Controllers\Admin\NotificationTemplateController;
-use App\Http\Controllers\Admin\MonitoringController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\SettingsController;
@@ -61,7 +61,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
             ->parameters(['tracking-relations' => 'trackingRelation']);
     });
 
-    Route::middleware('permission:manage geofences')->group(function () {
+    Route::middleware('permission:manage geofences|manage tracked geofences')->group(function () {
         Route::get('geofences', [GeofenceController::class, 'index'])->name('geofences.index');
         Route::get('monitoring/dashboard', [MonitoringController::class, 'dashboard'])->name('monitoring.dashboard');
         Route::get('monitoring/history', [MonitoringController::class, 'history'])->name('monitoring.history');

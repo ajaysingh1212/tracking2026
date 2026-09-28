@@ -3,6 +3,19 @@
 @section('page-eyebrow', 'Realtime')
 @section('page-title', 'Live Map')
 
+@section('page-actions')
+    <form method="POST" action="{{ route('live-map.self-tracking') }}">
+        @csrf
+        <button type="submit" class="btn {{ $selfTrackingEnabled ? 'btn-outline-danger' : 'tracker-primary-btn' }}" @disabled(! $selfTrackingEnabled && ! $hasOwnedValidLicense)>
+            <i class="fa-solid {{ $selfTrackingEnabled ? 'fa-location-dot' : 'fa-location-crosshairs' }} me-2"></i>
+            {{ $selfTrackingEnabled ? 'Stop Self Tracking' : 'Start Self Tracking' }}
+        </button>
+        @if (! $selfTrackingEnabled && ! $hasOwnedValidLicense)
+            <a href="{{ route('my-licenses.plans') }}" class="btn tracker-outline-btn ms-2">Buy License</a>
+        @endif
+    </form>
+@endsection
+
 @push('scripts')
     @vite(['resources/js/live-map.js'])
 @endpush
@@ -13,12 +26,50 @@
     <div class="row g-4">
         <div class="col-xl-9">
             <div class="card tracker-surface-card">
-                <div class="card-body p-0">
+                <div class="card-body p-0 position-relative">
+                    <div id="live-map-geofence-alerts" class="tracker-live-map-alerts d-none"></div>
                     <div id="live-map" class="tracker-live-map"></div>
                 </div>
             </div>
         </div>
         <div class="col-xl-3">
+            <div class="card tracker-surface-card mb-4">
+                <div class="card-header border-0 bg-transparent">
+                    <h3 class="tracker-card-title mb-1">Who Tracks Me</h3>
+                    <p class="tracker-card-subtitle mb-0">People allowed to see your location</p>
+                </div>
+                <div class="card-body pt-0">
+                    @forelse ($trackedBy as $tracker)
+                        <div class="tracker-map-person-row">
+                            <div class="tracker-avatar-sm">{{ strtoupper(substr($tracker['user']?->name ?? '?', 0, 1)) }}</div>
+                            <div class="tracker-map-person-copy">
+                                <strong>{{ $tracker['user']?->name }}</strong>
+                                <span class="tracker-status-pill {{ $tracker['has_active_license'] ? 'tracker-status-active' : 'tracker-status-muted' }}">
+                                    {{ $tracker['has_active_license'] ? 'Licensed tracker' : 'License inactive' }}
+                                </span>
+                            </div>
+                            @if (! $tracker['reverse_exists'] && $hasAvailableLicense)
+                                <form method="POST" action="{{ route('my-tracking.requests.back', $tracker['relation']) }}">
+                                    @csrf
+                                    <button type="submit" class="btn btn-sm tracker-primary-btn" title="Ask to track this person back">
+                                        <i class="fa-solid fa-user-plus"></i>
+                                    </button>
+                                </form>
+                            @elseif ($tracker['reverse_exists'])
+                                <span class="tracker-status-pill tracker-status-pending">Requested</span>
+                            @endif
+                        </div>
+                    @empty
+                        <div class="tracker-empty-state py-3">
+                            <i class="fa-solid fa-user-shield"></i>
+                            <p class="mb-0">Nobody is tracking you.</p>
+                        </div>
+                    @endforelse
+                    @if ($trackedBy->isNotEmpty() && ! $hasAvailableLicense)
+                        <a href="{{ route('my-licenses.plans') }}" class="btn tracker-outline-btn btn-sm mt-3">Buy a license to track back</a>
+                    @endif
+                </div>
+            </div>
             <div class="card tracker-surface-card">
                 <div class="card-header border-0 bg-transparent">
                     <h3 class="tracker-card-title mb-1">Tracked People</h3>
@@ -26,7 +77,7 @@
                 </div>
                 <div class="card-body pt-0">
                     @forelse ($people as $person)
-                        <div class="tracker-map-person-row {{ $person['isSelf'] ? 'tracker-map-person-row-self' : '' }}" data-person-row="{{ $person['id'] }}" role="button">
+                        <div class="tracker-map-person-row {{ $person['isSelf'] ? 'tracker-map-person-row-self' : '' }} {{ collect($person['geofences'])->contains('is_outside', true) ? 'tracker-map-person-row-warning' : '' }}" data-person-row="{{ $person['id'] }}" role="button">
                             <div class="tracker-avatar-sm">{{ strtoupper(substr($person['name'], 0, 1)) }}</div>
                             <div class="tracker-map-person-copy">
                                 <strong>{{ $person['name'] }}</strong>
@@ -48,6 +99,9 @@
                                     @else
                                         Never logged in
                                     @endif
+                                </span>
+                                <span data-field="geofence-warning" class="tracker-status-pill tracker-status-danger {{ collect($person['geofences'])->contains('is_outside', true) ? '' : 'd-none' }}">
+                                    <i class="fa-solid fa-triangle-exclamation"></i> Outside geofence
                                 </span>
                                 @if ($person['isSelf'])
                                     <span class="text-muted small d-block">

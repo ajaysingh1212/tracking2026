@@ -10,6 +10,8 @@ use App\Http\Resources\GeofenceAssignmentResource;
 use App\Http\Resources\GeofenceAssignmentRunResource;
 use App\Models\Geofence;
 use App\Models\GeofenceAssignment;
+use App\Models\User;
+use App\Services\RelationshipAuthorizationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -22,7 +24,8 @@ class GeofenceAssignmentController extends Controller
     {
         $this->authorize('viewAny', GeofenceAssignment::class);
 
-        $query = GeofenceAssignment::query()->with(self::EAGER_LOAD);
+        $query = GeofenceAssignment::query()->with(self::EAGER_LOAD)
+            ->when(! $request->user()->can('manage geofences'), fn ($query) => $query->where('assigned_by', $request->user()->id));
 
         if ($userId = $request->integer('user_id')) {
             $query->where('user_id', $userId);
@@ -46,6 +49,14 @@ class GeofenceAssignmentController extends Controller
         $this->authorize('create', GeofenceAssignment::class);
 
         $geofence = Geofence::where('uuid', $request->validated('geofence_uuid'))->firstOrFail();
+        $target = User::query()->findOrFail($request->integer('user_id'));
+
+        abort_unless(
+            $request->user()->can('manage geofences')
+            || ((int) $geofence->created_by === (int) $request->user()->id
+                && app(RelationshipAuthorizationService::class)->canTrackUser($request->user(), $target)),
+            403,
+        );
 
         $assignment = GeofenceAssignment::create([
             ...$request->safe()->except(['geofence_uuid', 'alert_on_exit', 'alert_on_missed']),

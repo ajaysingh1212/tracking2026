@@ -73,6 +73,18 @@ export function initIncomingCallRinger() {
     let waitingConversationChannel = null;
 
     const handOffAcceptedCall = (call) => {
+        if (!document.getElementById('chat-conversations-data')) {
+            const params = new URLSearchParams({
+                conversation: call.conversation_uuid,
+                call: call.call_uuid,
+                call_type: call.type,
+            });
+
+            window.location.assign(`/chats?${params.toString()}`);
+
+            return;
+        }
+
         document.dispatchEvent(new CustomEvent('tracker:call-accepted', { detail: call }));
         window.dispatchEvent(new CustomEvent('tracker:call-accepted', { detail: call }));
     };

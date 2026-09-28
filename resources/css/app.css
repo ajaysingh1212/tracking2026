@@ -1839,6 +1839,59 @@ body {
     overflow: hidden;
 }
 
+.tracker-live-map-alerts {
+    position: absolute;
+    top: 14px;
+    left: 64px;
+    right: 14px;
+    z-index: 500;
+    display: grid;
+    gap: 8px;
+    pointer-events: none;
+}
+
+.tracker-live-map-alert {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border: 1px solid rgba(239, 68, 68, 0.6);
+    border-radius: 14px;
+    background: rgba(127, 29, 29, 0.94);
+    color: #fff;
+    box-shadow: 0 10px 30px rgba(127, 29, 29, 0.35);
+    animation: tracker-geofence-warning-pulse 1.6s ease-in-out infinite;
+}
+
+.tracker-live-map-alert div {
+    display: grid;
+}
+
+.tracker-live-map-alert span {
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 0.78rem;
+}
+
+.tracker-map-person-row-warning {
+    border: 1px solid rgba(239, 68, 68, 0.55);
+    border-radius: 14px;
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.tracker-map-marker-warning .tracker-map-marker-dot {
+    background: linear-gradient(135deg, #ef4444, #991b1b);
+    animation: tracker-geofence-warning-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes tracker-geofence-warning-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.68; }
+}
+
+.tracker-live-map-dark .leaflet-tile-pane {
+    filter: brightness(0.68) contrast(1.18) saturate(0.72);
+}
+
 .tracker-map-marker {
     position: relative;
     width: 36px;
@@ -3121,6 +3174,88 @@ body {
     border-radius: 999px;
     padding: 8px 10px 8px 8px;
     box-shadow: 0 14px 34px rgba(0, 0, 0, 0.35);
+    cursor: grab;
+    user-select: none;
+    touch-action: none;
+}
+
+.tracker-incoming-call-banner {
+    position: fixed;
+    top: 18px;
+    right: 18px;
+    z-index: 1100;
+    width: min(430px, calc(100vw - 36px));
+}
+
+.tracker-incoming-call-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    border-radius: 20px;
+    background: rgba(10, 20, 38, 0.96);
+    color: #fff;
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.42);
+    backdrop-filter: blur(18px);
+}
+
+.tracker-incoming-call-card .tracker-call-kicker {
+    position: absolute;
+    top: -10px;
+    left: 18px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: var(--tracker-primary);
+    color: #fff;
+    font-size: 0.68rem;
+}
+
+.tracker-incoming-call-avatar {
+    width: 48px;
+    height: 48px;
+    margin: 0;
+    font-size: 1rem;
+}
+
+.tracker-incoming-call-copy {
+    flex: 1;
+    min-width: 0;
+}
+
+.tracker-incoming-call-copy .tracker-call-name,
+.tracker-incoming-call-copy .tracker-call-status {
+    margin: 0;
+    text-align: left;
+}
+
+.tracker-incoming-call-card .tracker-call-actions {
+    margin: 0;
+    gap: 8px;
+}
+
+.tracker-incoming-call-card .tracker-call-btn {
+    width: 42px;
+    height: 42px;
+}
+
+.tracker-call-minimized-video {
+    width: 180px;
+    height: 110px;
+    border-radius: 18px;
+    object-fit: cover;
+    background: #020617;
+}
+
+.tracker-call-minimized-action {
+    width: 30px;
+    height: 30px;
+    border: 0;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: rgba(255, 255, 255, 0.14);
+    color: #fff;
 }
 
 .tracker-call-minimized-avatar {

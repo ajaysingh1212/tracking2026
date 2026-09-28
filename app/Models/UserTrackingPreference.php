@@ -16,6 +16,7 @@ class UserTrackingPreference extends Model
         'user_id',
         'distance_filter_meters',
         'tracking_source',
+        'self_tracking_enabled',
     ];
 
     protected function casts(): array
@@ -23,6 +24,7 @@ class UserTrackingPreference extends Model
         return [
             'distance_filter_meters' => 'integer',
             'tracking_source' => TrackingSource::class,
+            'self_tracking_enabled' => 'boolean',
         ];
     }
 

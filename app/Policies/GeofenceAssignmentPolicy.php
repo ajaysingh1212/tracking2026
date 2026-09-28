@@ -9,7 +9,7 @@ class GeofenceAssignmentPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->can('manage geofences');
+        return $user->canAny(['manage geofences', 'manage tracked geofences']);
     }
 
     public function view(User $user, GeofenceAssignment $geofenceAssignment): bool
@@ -21,16 +21,16 @@ class GeofenceAssignmentPolicy
 
     public function create(User $user): bool
     {
-        return $user->can('manage geofences');
+        return $user->canAny(['manage geofences', 'manage tracked geofences']);
     }
 
     public function update(User $user, GeofenceAssignment $geofenceAssignment): bool
     {
-        return $user->can('manage geofences');
+        return $user->can('manage geofences') || $user->id === $geofenceAssignment->assigned_by;
     }
 
     public function delete(User $user, GeofenceAssignment $geofenceAssignment): bool
     {
-        return $user->can('manage geofences');
+        return $user->can('manage geofences') || $user->id === $geofenceAssignment->assigned_by;
     }
 }
