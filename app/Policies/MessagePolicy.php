@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\User;
+use App\Services\ChatAuthorizationService;
 
 class MessagePolicy
 {
@@ -15,7 +16,7 @@ class MessagePolicy
 
     public function create(User $user, Conversation $conversation): bool
     {
-        return $conversation->hasMember($user);
+        return app(ChatAuthorizationService::class)->canUseConversation($user, $conversation);
     }
 
     public function update(User $user, Message $message): bool

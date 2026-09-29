@@ -391,6 +391,7 @@ class PrivateChat {
 
         document.getElementById('chat-attach-btn').addEventListener('click', (event) => {
             event.stopPropagation();
+            if (!this._currentConversationCanCommunicate()) return;
             this.attachMenuEl?.classList.toggle('d-none');
         });
         document.addEventListener('click', (event) => {
@@ -896,6 +897,7 @@ class PrivateChat {
         this._setMobileConversationOpen(true);
 
         this._renderHeader(conversation);
+        this._applyConversationActionState(conversation);
         this._renderConversationList();
         await this._loadConversationMessages(uuid);
 
@@ -941,6 +943,22 @@ class PrivateChat {
         }
 
         this.messagesEl.replaceChildren();
+        const conversation = this.conversations.get(uuid);
+
+        if (conversation?.can_communicate === false) {
+            const notice = document.createElement('div');
+            notice.className = 'tracker-empty-state mb-3';
+            notice.innerHTML = `
+                <i class="fa-solid fa-lock"></i>
+                <p class="mb-2">${escapeHtml(conversation.blocked_reason ?? 'This private chat is paused because the tracking license expired.')}</p>
+                <div class="d-flex flex-wrap gap-2 justify-content-center">
+                    <a href="${conversation.license_actions?.renew_url ?? '/my-licenses'}" class="btn tracker-outline-btn btn-sm" title="Renew license"><i class="fa-solid fa-rotate me-1"></i> Renew</a>
+                    <a href="${conversation.license_actions?.upgrade_url ?? '/my-licenses/plans'}" class="btn tracker-primary-btn btn-sm" title="Upgrade license"><i class="fa-solid fa-arrow-up-right-dots me-1"></i> Upgrade</a>
+                </div>
+            `;
+            this.messagesEl.appendChild(notice);
+        }
+
         data.data.forEach((message) => this._appendMessage(message));
 
         if (shouldScroll) {
@@ -1032,9 +1050,40 @@ class PrivateChat {
 
         if (conversation.type === 'group') {
             this.headerStatusEl.textContent = `${conversation.member_count ?? 0} members`;
+        } else if (conversation.can_communicate === false) {
+            this.headerStatusEl.textContent = 'License expired';
         } else {
             this._renderPresenceStatus(conversation.other_user?.id);
         }
+    }
+
+    _currentConversationCanCommunicate() {
+        const conversation = this.currentUuid ? this.conversations.get(this.currentUuid) : null;
+
+        return !conversation || conversation.can_communicate !== false;
+    }
+
+    _applyConversationActionState(conversation) {
+        const blocked = conversation?.can_communicate === false;
+        const controls = [
+            this.composerInputEl,
+            document.getElementById('chat-attach-btn'),
+            document.getElementById('chat-audio-record-btn'),
+            document.getElementById('chat-video-record-btn'),
+            document.getElementById('chat-voice-call-btn'),
+            document.getElementById('chat-video-call-btn'),
+            this.composerEl?.querySelector('button[type="submit"]'),
+        ].filter(Boolean);
+
+        controls.forEach((control) => {
+            control.disabled = blocked;
+            control.classList.toggle('disabled', blocked);
+        });
+
+        this.attachMenuEl?.classList.add('d-none');
+        this.composerInputEl.placeholder = blocked
+            ? 'License expired. Renew or upgrade to continue.'
+            : 'Type a message...';
     }
 
     _renderPresenceStatus(userId) {
@@ -1389,6 +1438,8 @@ class PrivateChat {
     // ---------- Composer ----------
 
     async _submitComposer() {
+        if (!this._currentConversationCanCommunicate()) return;
+
         const body = this.composerInputEl.value.trim();
 
         if (!body || !this.currentUuid) return;
@@ -1408,7 +1459,7 @@ class PrivateChat {
     }
 
     _handleTyping() {
-        if (!this.currentUuid) return;
+        if (!this.currentUuid || !this._currentConversationCanCommunicate()) return;
 
         const now = Date.now();
 
@@ -1419,6 +1470,7 @@ class PrivateChat {
     }
 
     async _sendTextMessage(body, metadata = null, conversationUuid = this.currentUuid) {
+        if (conversationUuid === this.currentUuid && !this._currentConversationCanCommunicate()) return;
         if (!body || !conversationUuid) return;
 
         await window.axios.post(`/api/v1/conversations/${conversationUuid}/messages`, {
@@ -1432,7 +1484,7 @@ class PrivateChat {
     // ---------- Attachments ----------
 
     _handleShareOption(kind) {
-        if (!this.currentUuid) return;
+        if (!this.currentUuid || !this._currentConversationCanCommunicate()) return;
 
         if (kind === 'photo') {
             this.photoInputEl?.click();
@@ -2777,7 +2829,7 @@ class PrivateChat {
     }
 
     async _startCall(type) {
-        if (!this.currentUuid || this.activeCall) return;
+        if (!this.currentUuid || this.activeCall || !this._currentConversationCanCommunicate()) return;
 
         const conversation = this.conversations.get(this.currentUuid);
 

@@ -68,6 +68,7 @@ return [
         'items' => [
             ['title' => 'Profile', 'icon' => 'fa-solid fa-user-gear', 'route' => 'profile.edit', 'description' => 'Account and security'],
             ['title' => 'Live Map', 'icon' => 'fa-solid fa-map-location-dot', 'route' => 'live-map.index', 'description' => 'Realtime location of tracked people'],
+            ['title' => 'Tasks', 'icon' => 'fa-solid fa-list-check', 'route' => 'tasks.index', 'permission' => 'manage tasks', 'description' => 'Assign and complete field work', 'badge' => 'assigned_tasks'],
             ['title' => 'Private Chats', 'icon' => 'fa-solid fa-comments', 'route' => 'chats.index', 'description' => 'Direct messages with your team', 'badge' => 'unread_messages'],
             ['title' => 'Share My Location', 'icon' => 'fa-solid fa-location-crosshairs', 'route' => 'my-location.index', 'description' => 'Broadcast this browser\'s position'],
             ['title' => 'Friends & Tracking', 'icon' => 'fa-solid fa-user-group', 'route' => 'my-tracking.index', 'permission' => 'use tracking workspace', 'description' => 'Requests, friends and tracking access', 'badge' => 'pending_tracking_requests'],

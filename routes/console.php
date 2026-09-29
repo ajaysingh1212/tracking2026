@@ -9,3 +9,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('geofence:evaluate-assignments')->everyFiveMinutes();
+Schedule::command('tasks:purge-expired')->dailyAt('02:20')->withoutOverlapping();

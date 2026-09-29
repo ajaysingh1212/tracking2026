@@ -13,7 +13,7 @@ class DemoUserLicenseSeeder extends Seeder
 {
     public function run(): void
     {
-        $plan = LicensePlan::query()->where('name', 'Monthly Starter')->first();
+        $plan = LicensePlan::query()->where('name', 'Free Demo')->first();
 
         if (! $plan) {
             return;

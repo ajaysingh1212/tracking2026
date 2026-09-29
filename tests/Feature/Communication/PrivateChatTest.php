@@ -3,10 +3,16 @@
 namespace Tests\Feature\Communication;
 
 use App\Events\MessageSent;
+use App\Enums\LicenseStatus;
+use App\Enums\LicenseType;
+use App\Enums\PaymentStatus;
+use App\Enums\UserStatus;
 use App\Models\ConversationMember;
+use App\Models\LicensePlan;
 use App\Models\Message;
 use App\Models\TrackingRelation;
 use App\Models\User;
+use App\Models\UserLicense;
 use App\Services\ConversationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
@@ -19,9 +25,25 @@ class PrivateChatTest extends TestCase
 
     private function connect(User $tracker, User $tracked): void
     {
+        $license = UserLicense::create([
+            'user_id' => $tracker->id,
+            'assigned_tracked_user_id' => $tracked->id,
+            'license_plan_id' => LicensePlan::firstOrCreate(
+                ['name' => 'Test Daily'],
+                ['type' => LicenseType::Daily, 'duration_in_days' => 1, 'price' => 1, 'renewal_price' => 1, 'is_free' => false, 'status' => UserStatus::Active],
+            )->id,
+            'license_number' => 'TEST-'.str()->uuid(),
+            'purchase_date' => now(),
+            'activation_date' => now(),
+            'expiry_date' => now()->addDay(),
+            'status' => LicenseStatus::Active,
+            'payment_status' => PaymentStatus::Paid,
+        ]);
+
         TrackingRelation::create([
             'tracker_user_id' => $tracker->id,
             'tracked_user_id' => $tracked->id,
+            'user_license_id' => $license->id,
             'relationship_name' => 'Test Relation',
             'status' => 'active',
         ]);

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\UserStatus;
 use App\Traits\HasUuid;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -42,5 +43,17 @@ class TrackingRelation extends Model
     public function userLicense(): BelongsTo
     {
         return $this->belongsTo(UserLicense::class);
+    }
+
+    public function scopeUsableForTracking(Builder $query): Builder
+    {
+        return $query
+            ->where('status', UserStatus::Active)
+            ->whereHas('userLicense', fn (Builder $license) => $license->usable());
+    }
+
+    public function hasUsableLicense(): bool
+    {
+        return $this->status === UserStatus::Active && (bool) $this->userLicense?->isUsable();
     }
 }
