@@ -47,7 +47,7 @@
                                         <form method="POST" action="{{ route('admin.license-plans.destroy', $plan) }}" data-confirm-delete data-confirm-title="Delete this plan?">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i></button>
+                                            <button type="submit" class="btn btn-sm tracker-outline-btn tracker-outline-btn-danger"><i class="fa-solid fa-trash"></i></button>
                                         </form>
                                     @endcan
                                 </div>
