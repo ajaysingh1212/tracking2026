@@ -109,7 +109,7 @@ body {
     gap: 14px;
     padding: 20px 22px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(255, 255, 255, 0.03);
+    background: rgba(132, 124, 124, 0.03);
 }
 
 .tracker-sidebar-logo,
@@ -151,7 +151,7 @@ body {
 .tracker-profile-role,
 .tracker-brand-title,
 .tracker-brand-subtitle {
-    color: #fff;
+     color: #ffffff;
 }
 
 .tracker-sidebar-caption,
@@ -246,7 +246,7 @@ body {
     display: flex;
     align-items: center;
     gap: 10px;
-    color: rgba(255, 255, 255, 0.84);
+    color: #ffffff;
     font-weight: 600;
     text-decoration: none;
 }
@@ -274,14 +274,14 @@ body {
 .tracker-nav-copy p {
     margin: 0;
     font-size: 0.96rem;
-    color: inherit;
+    color: #ffffff;
 }
 
 .tracker-nav-copy span {
     display: block;
     margin-top: 0.15rem;
     font-size: 0.75rem;
-    color: rgba(255, 255, 255, 0.58);
+    color: rgba(255, 255, 255, 0.85);
 }
 
 .tracker-nav-badge {
