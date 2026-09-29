@@ -2,9 +2,15 @@
 
 namespace Tests\Feature;
 
+use App\Enums\LicenseStatus;
+use App\Enums\LicenseType;
+use App\Enums\PaymentStatus;
+use App\Enums\UserStatus;
+use App\Models\LicensePlan;
 use App\Models\DeviceSession;
 use App\Models\TrackingRelation;
 use App\Models\User;
+use App\Models\UserLicense;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -12,6 +18,32 @@ use Tests\TestCase;
 class LiveMapTest extends TestCase
 {
     use RefreshDatabase;
+
+    private function connect(User $tracker, User $tracked, ?\Illuminate\Support\Carbon $expiresAt = null): void
+    {
+        $license = UserLicense::create([
+            'user_id' => $tracker->id,
+            'assigned_tracked_user_id' => $tracked->id,
+            'license_plan_id' => LicensePlan::firstOrCreate(
+                ['name' => 'Test Daily'],
+                ['type' => LicenseType::Daily, 'duration_in_days' => 1, 'price' => 1, 'renewal_price' => 1, 'is_free' => false, 'status' => UserStatus::Active],
+            )->id,
+            'license_number' => 'TEST-'.str()->uuid(),
+            'purchase_date' => now(),
+            'activation_date' => now(),
+            'expiry_date' => $expiresAt ?? now()->addDay(),
+            'status' => LicenseStatus::Active,
+            'payment_status' => PaymentStatus::Paid,
+        ]);
+
+        TrackingRelation::create([
+            'tracker_user_id' => $tracker->id,
+            'tracked_user_id' => $tracked->id,
+            'user_license_id' => $license->id,
+            'relationship_name' => 'Test Relation',
+            'status' => 'active',
+        ]);
+    }
 
     public function test_a_user_with_no_tracked_people_sees_an_empty_page(): void
     {
@@ -36,12 +68,7 @@ class LiveMapTest extends TestCase
         $tracked = User::factory()->create();
         $stranger = User::factory()->create();
 
-        TrackingRelation::create([
-            'tracker_user_id' => $tracker->id,
-            'tracked_user_id' => $tracked->id,
-            'relationship_name' => 'Test Relation',
-            'status' => 'active',
-        ]);
+        $this->connect($tracker, $tracked);
 
         $response = $this->actingAs($tracker)->get(route('live-map.index'));
 
@@ -62,12 +89,7 @@ class LiveMapTest extends TestCase
 
         $tracked = User::factory()->create();
 
-        TrackingRelation::create([
-            'tracker_user_id' => $tracker->id,
-            'tracked_user_id' => $tracked->id,
-            'relationship_name' => 'Test Relation',
-            'status' => 'active',
-        ]);
+        $this->connect($tracker, $tracked);
 
         // Simulate a logged-in, still-active session — exactly what
         // AuthenticatedSessionController::store() writes on real login —
@@ -90,6 +112,22 @@ class LiveMapTest extends TestCase
 
             return $person !== null && $person['isOnline'] === true && $person['lat'] === null;
         });
+    }
+
+    public function test_expired_license_hides_tracked_person_from_live_map(): void
+    {
+        $this->seed(RoleAndPermissionSeeder::class);
+
+        $tracker = User::factory()->create();
+        $tracker->assignRole('User');
+
+        $tracked = User::factory()->create();
+        $this->connect($tracker, $tracked, now()->subDay());
+
+        $response = $this->actingAs($tracker)->get(route('live-map.index'));
+
+        $response->assertOk();
+        $response->assertViewHas('people', fn ($people) => ! $people->pluck('id')->contains($tracked->id));
     }
 
     public function test_a_privileged_role_sees_all_users(): void

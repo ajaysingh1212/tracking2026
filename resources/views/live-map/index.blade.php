@@ -45,10 +45,21 @@
                             <div class="tracker-map-person-copy">
                                 <strong>{{ $tracker['user']?->name }}</strong>
                                 <span class="tracker-status-pill {{ $tracker['has_active_license'] ? 'tracker-status-active' : 'tracker-status-muted' }}">
-                                    {{ $tracker['has_active_license'] ? 'Licensed tracker' : 'License inactive' }}
+                                    {{ $tracker['has_active_license'] ? 'Licensed tracker' : ($tracker['license_expired'] ? 'License expired' : 'License inactive') }}
                                 </span>
+                                @if ($tracker['license_expired'])
+                                    <span class="text-muted small d-block">{{ $tracker['user']?->name }}'s license for your account has expired.</span>
+                                    <span class="d-flex gap-2 mt-2">
+                                        <a href="{{ route('my-licenses.index') }}" class="btn tracker-outline-btn btn-sm" title="Renew license">
+                                            <i class="fa-solid fa-rotate"></i>
+                                        </a>
+                                        <a href="{{ route('my-licenses.plans') }}" class="btn tracker-primary-btn btn-sm" title="Upgrade license">
+                                            <i class="fa-solid fa-arrow-up-right-dots"></i>
+                                        </a>
+                                    </span>
+                                @endif
                             </div>
-                            @if (! $tracker['reverse_exists'] && $hasAvailableLicense)
+                            @if ($tracker['has_active_license'] && ! $tracker['reverse_exists'] && $hasAvailableLicense)
                                 <form method="POST" action="{{ route('my-tracking.requests.back', $tracker['relation']) }}">
                                     @csrf
                                     <button type="submit" class="btn btn-sm tracker-primary-btn" title="Ask to track this person back">

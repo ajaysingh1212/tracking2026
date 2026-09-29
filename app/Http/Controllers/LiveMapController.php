@@ -88,6 +88,7 @@ class LiveMapController extends Controller
                 ->where('payment_status', PaymentStatus::Paid)
                 ->whereIn('status', [LicenseStatus::Pending, LicenseStatus::Active])
                 ->whereNull('assigned_tracked_user_id')
+                ->where(fn ($query) => $query->whereNull('expiry_date')->orWhere('expiry_date', '>', now()))
                 ->exists(),
         ]);
     }
@@ -126,6 +127,7 @@ class LiveMapController extends Controller
     {
         return $person->trackerRelations()
             ->where('status', UserStatus::Active)
+            ->whereHas('userLicense', fn ($query) => $query->usable())
             ->with('trackerUser:id,name')
             ->get()
             ->pluck('trackerUser.name')
@@ -143,7 +145,9 @@ class LiveMapController extends Controller
             ->map(fn ($relation) => [
                 'relation' => $relation,
                 'user' => $relation->trackerUser,
-                'has_active_license' => $relation->userLicense?->status === LicenseStatus::Active,
+                'has_active_license' => (bool) $relation->userLicense?->isUsable(),
+                'license_expired' => (bool) $relation->userLicense?->isExpired(),
+                'license' => $relation->userLicense,
                 'reverse_exists' => $person->trackedUsers()
                     ->where('tracked_user_id', $relation->tracker_user_id)
                     ->exists(),

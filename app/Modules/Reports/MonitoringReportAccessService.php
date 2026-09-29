@@ -29,7 +29,7 @@ class MonitoringReportAccessService
 
         return $query->whereHas('trackerRelations', fn (Builder $relation) => $relation
             ->where('tracker_user_id', $viewer->id)
-            ->where('status', UserStatus::Active));
+            ->usableForTracking());
     }
 
     public function filtersFor(Request $request): array

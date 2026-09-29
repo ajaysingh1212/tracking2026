@@ -3,6 +3,7 @@
     $__unreadCount = auth()->user()->unreadNotifications()->count();
     $__unreadMessageCount = \App\Models\Message::unreadCountFor(auth()->user());
     $__pendingTrackingRequestCount = auth()->user()->trackerRelations()->where('status', 'pending')->count();
+    $__assignedTaskCount = auth()->user()->assignedFieldTasks()->whereIn('status', ['assigned', 'in_progress'])->count();
 @endphp
 
 <ul class="nav sidebar-menu flex-column tracker-sidebar-nav" data-lte-toggle="treeview" data-animation-speed="280" role="menu">

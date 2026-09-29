@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Models\TrackingRelation;
 use App\Models\User;
+use App\Models\Conversation;
+use App\Enums\ConversationType;
 use Illuminate\Database\Eloquent\Collection;
 
 class ChatAuthorizationService
@@ -31,7 +33,7 @@ class ChatAuthorizationService
         }
 
         return TrackingRelation::query()
-            ->where('status', 'active')
+            ->usableForTracking()
             ->where(function ($query) use ($a, $b) {
                 $query->where(function ($q) use ($a, $b) {
                     $q->where('tracker_user_id', $a->id)->where('tracked_user_id', $b->id);
@@ -40,6 +42,21 @@ class ChatAuthorizationService
                 });
             })
             ->exists();
+    }
+
+    public function canUseConversation(User $user, Conversation $conversation): bool
+    {
+        if (! $conversation->hasMember($user)) {
+            return false;
+        }
+
+        if ($conversation->type === ConversationType::Group) {
+            return true;
+        }
+
+        $other = $conversation->otherParticipant($user);
+
+        return $other !== null && $this->canCommunicate($user, $other);
     }
 
     /**
@@ -55,8 +72,8 @@ class ChatAuthorizationService
             return User::query()->where('id', '!=', $user->id)->get();
         }
 
-        $trackedIds = $user->trackedUsers()->where('status', 'active')->pluck('tracked_user_id');
-        $trackerIds = $user->trackerRelations()->where('status', 'active')->pluck('tracker_user_id');
+        $trackedIds = $user->trackedUsers()->usableForTracking()->pluck('tracked_user_id');
+        $trackerIds = $user->trackerRelations()->usableForTracking()->pluck('tracker_user_id');
 
         return User::query()->whereIn('id', $trackedIds->merge($trackerIds)->unique())->get();
     }

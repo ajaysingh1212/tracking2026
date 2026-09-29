@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use App\Enums\ConversationType;
 use App\Models\Message;
+use App\Services\ChatAuthorizationService;
 use App\Services\UserPresenceService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -16,6 +17,7 @@ class ConversationResource extends JsonResource
         $isGroup = $this->type === ConversationType::Group;
         $other = $isGroup ? null : $this->otherParticipant($user);
         $presence = app(UserPresenceService::class);
+        $canCommunicate = app(ChatAuthorizationService::class)->canUseConversation($user, $this->resource);
 
         return [
             'uuid' => $this->uuid,
@@ -45,6 +47,12 @@ class ConversationResource extends JsonResource
                 'created_at' => $this->latestMessage->created_at->toIso8601String(),
             ] : null),
             'unread_count' => $this->unread_count ?? Message::unreadCountFor($user, $this->id),
+            'can_communicate' => $canCommunicate,
+            'blocked_reason' => $canCommunicate || $isGroup ? null : 'The tracking license for this private chat has expired.',
+            'license_actions' => $canCommunicate || $isGroup ? null : [
+                'renew_url' => route('my-licenses.index'),
+                'upgrade_url' => route('my-licenses.plans'),
+            ],
             'updated_at' => $this->updated_at->toIso8601String(),
         ];
     }

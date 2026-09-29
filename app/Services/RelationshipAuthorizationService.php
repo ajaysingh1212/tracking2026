@@ -53,7 +53,7 @@ class RelationshipAuthorizationService
     private function hasActiveRelationship(User $actor, User $target): bool
     {
         return TrackingRelation::query()
-            ->where('status', 'active')
+            ->usableForTracking()
             ->where(function ($query) use ($actor, $target) {
                 $query->where(function ($query) use ($actor, $target) {
                     $query->where('tracker_user_id', $actor->id)
@@ -69,9 +69,9 @@ class RelationshipAuthorizationService
     private function hasActiveTrackingPermission(User $actor, User $target): bool
     {
         return TrackingRelation::query()
+            ->usableForTracking()
             ->where('tracker_user_id', $actor->id)
             ->where('tracked_user_id', $target->id)
-            ->where('status', 'active')
             ->exists();
     }
 }

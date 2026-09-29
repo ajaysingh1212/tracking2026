@@ -8,6 +8,7 @@ use App\Http\Controllers\User\NotificationController;
 use App\Http\Controllers\User\SettingsController;
 use App\Http\Controllers\User\SupportTicketController;
 use App\Http\Controllers\User\TrackingRelationController;
+use App\Http\Controllers\User\FieldTaskController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -29,6 +30,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('my-tracking/{trackingRelation}/request-back', [TrackingRelationController::class, 'requestBack'])->name('my-tracking.requests.back');
         Route::delete('my-tracking/{trackingRelation}/reject', [TrackingRelationController::class, 'reject'])->name('my-tracking.requests.reject');
         Route::delete('my-tracking/{trackingRelation}', [TrackingRelationController::class, 'destroy'])->name('my-tracking.destroy');
+    });
+
+    Route::middleware('permission:manage tasks')->group(function () {
+        Route::get('tasks/export', [FieldTaskController::class, 'export'])->name('tasks.export');
+        Route::get('tasks/{task}/report', [FieldTaskController::class, 'report'])->name('tasks.report');
+        Route::get('tasks/{task}/export', [FieldTaskController::class, 'exportTask'])->name('tasks.export-task');
+        Route::resource('tasks', FieldTaskController::class);
     });
 
     Route::get('license-transfers', [LicenseTransferController::class, 'index'])->name('license-transfers.index');

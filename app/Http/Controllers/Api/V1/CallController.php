@@ -46,7 +46,7 @@ class CallController extends Controller
 
     public function accept(CallSession $call): JsonResponse
     {
-        $this->authorize('view', $call);
+        $this->authorize('join', $call);
 
         $this->callService->accept($call, request()->user());
 

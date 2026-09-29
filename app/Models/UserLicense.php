@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\LicenseStatus;
 use App\Enums\PaymentStatus;
 use App\Traits\HasUuid;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -78,5 +79,25 @@ class UserLicense extends Model
     public function transfers(): HasMany
     {
         return $this->hasMany(LicenseTransfer::class);
+    }
+
+    public function isUsable(): bool
+    {
+        return $this->payment_status === PaymentStatus::Paid
+            && $this->status === LicenseStatus::Active
+            && ($this->expiry_date === null || $this->expiry_date->isFuture());
+    }
+
+    public function isExpired(): bool
+    {
+        return $this->expiry_date !== null && $this->expiry_date->isPast();
+    }
+
+    public function scopeUsable(Builder $query): Builder
+    {
+        return $query
+            ->where('payment_status', PaymentStatus::Paid)
+            ->where('status', LicenseStatus::Active)
+            ->where(fn (Builder $query) => $query->whereNull('expiry_date')->orWhere('expiry_date', '>', now()));
     }
 }

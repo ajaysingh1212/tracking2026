@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Models\CallSession;
 use App\Models\Conversation;
 use App\Models\User;
+use App\Services\ChatAuthorizationService;
 
 class CallSessionPolicy
 {
@@ -15,11 +16,14 @@ class CallSessionPolicy
 
     public function create(User $user, Conversation $conversation): bool
     {
-        return $conversation->hasMember($user);
+        return app(ChatAuthorizationService::class)->canUseConversation($user, $conversation);
     }
 
     public function join(User $user, CallSession $callSession): bool
     {
-        return $callSession->loadMissing('conversation')->conversation->hasMember($user);
+        return app(ChatAuthorizationService::class)->canUseConversation(
+            $user,
+            $callSession->loadMissing('conversation')->conversation,
+        );
     }
 }

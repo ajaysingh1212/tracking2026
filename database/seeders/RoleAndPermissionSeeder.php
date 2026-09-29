@@ -22,6 +22,7 @@ class RoleAndPermissionSeeder extends Seeder
             'manage user licenses',
             'manage tracking relations',
             'use tracking workspace',
+            'manage tasks',
             'manage geofences',
             'manage tracked geofences',
             'manage settings',
@@ -54,6 +55,7 @@ class RoleAndPermissionSeeder extends Seeder
             'manage user licenses',
             'manage tracking relations',
             'use tracking workspace',
+            'manage tasks',
             'manage geofences',
             'manage tracked geofences',
             'manage settings',
@@ -77,6 +79,7 @@ class RoleAndPermissionSeeder extends Seeder
             'view dashboard',
             'view notifications',
             'use tracking workspace',
+            'manage tasks',
             'manage tracked geofences',
         ]);
     }

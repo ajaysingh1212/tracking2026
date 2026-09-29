@@ -208,6 +208,16 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasOne(UserTrackingPreference::class);
     }
 
+    public function createdFieldTasks(): HasMany
+    {
+        return $this->hasMany(FieldTask::class, 'creator_id');
+    }
+
+    public function assignedFieldTasks(): HasMany
+    {
+        return $this->hasMany(FieldTask::class, 'assignee_id');
+    }
+
     public function conversationMemberships(): HasMany
     {
         return $this->hasMany(ConversationMember::class);
