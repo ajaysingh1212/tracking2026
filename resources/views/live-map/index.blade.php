@@ -84,9 +84,10 @@
             <div class="card tracker-surface-card">
                 <div class="card-header border-0 bg-transparent">
                     <h3 class="tracker-card-title mb-1">Tracked People</h3>
-                    <p class="tracker-card-subtitle mb-0">{{ $people->count() }} visible</p>
+                    <p class="tracker-card-subtitle mb-0" id="live-map-people-count">{{ $people->count() }} visible</p>
                 </div>
                 <div class="card-body pt-0">
+                    <div id="live-map-people-list">
                     @forelse ($people as $person)
                         <div class="tracker-map-person-row {{ $person['isSelf'] ? 'tracker-map-person-row-self' : '' }} {{ collect($person['geofences'])->contains('is_outside', true) ? 'tracker-map-person-row-warning' : '' }}" data-person-row="{{ $person['id'] }}" role="button">
                             <div class="tracker-avatar-sm">{{ strtoupper(substr($person['name'], 0, 1)) }}</div>
@@ -127,6 +128,9 @@
                             <button type="button" class="btn btn-sm tracker-outline-btn tracker-live-report-btn" data-report-user="{{ $person['id'] }}" title="Open reports">
                                 <i class="fa-solid fa-chart-pie"></i>
                             </button>
+                            @if ($person['canRouteHistory'])
+                                <button type="button" class="btn btn-sm tracker-outline-btn" data-route-history="{{ $person['id'] }}" title="Route history" aria-label="Route history"><i class="fa-solid fa-route"></i></button>
+                            @endif
                         </div>
                     @empty
                         <div class="tracker-empty-state">
@@ -134,11 +138,13 @@
                             <p class="mb-0">No tracked people yet. Set up a tracking relation to see them here.</p>
                         </div>
                     @endforelse
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
+    @include('live-map._route-history')
     <div class="modal fade" id="live-map-report-modal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content tracker-modal">

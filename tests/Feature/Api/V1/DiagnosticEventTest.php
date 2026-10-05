@@ -12,6 +12,7 @@ use Tests\TestCase;
 class DiagnosticEventTest extends TestCase
 {
     use RefreshDatabase;
+    use \Tests\Concerns\CreatesTrackingLicense;
 
     public function test_a_valid_diagnostic_event_is_recorded(): void
     {
@@ -58,6 +59,7 @@ class DiagnosticEventTest extends TestCase
             'tracker_user_id' => $tracker->id,
             'tracked_user_id' => $tracked->id,
             'relationship_name' => 'Assigned user',
+            'user_license_id' => $this->trackingLicense($tracker, $tracked)->id,
             'status' => 'active',
         ]);
 

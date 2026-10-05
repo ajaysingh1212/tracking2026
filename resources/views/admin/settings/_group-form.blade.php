@@ -281,7 +281,7 @@
 
                     @elseif ($setting->type === 'integer')
                         <label class="st-label" for="setting_{{ $setting->key }}"><i class="{{ $iconMap['integer'] }}"></i>{{ \Illuminate\Support\Str::of($setting->key)->replace('_', ' ')->headline() }}</label>
-                        <input type="number" name="values[{{ $setting->key }}]" id="setting_{{ $setting->key }}" class="st-input" value="{{ $setting->value }}">
+                        <input type="number" name="values[{{ $setting->key }}]" id="setting_{{ $setting->key }}" class="st-input" value="{{ $setting->value }}" @if ($setting->key === 'location_save_radius_meters') min="1" max="65535" step="1" required @endif>
 
                     @elseif ($setting->type === 'json')
                         <label class="st-label" for="setting_{{ $setting->key }}"><i class="{{ $iconMap['json'] }}"></i>{{ \Illuminate\Support\Str::of($setting->key)->replace('_', ' ')->headline() }}</label>

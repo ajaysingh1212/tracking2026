@@ -26,7 +26,8 @@ class DeviceSessionController extends Controller
             DB::table('sessions')->where('id', $deviceSession->session_id)->delete();
         }
 
-        $deviceSession->update(['is_current' => false, 'logged_out_at' => now()]);
+        $deviceSession->update(['is_current' => false, 'logged_out_at' => now(),
+            'tracking_key_hash' => null, 'tracking_revoked_at' => now()]);
 
         return back()->with('status', 'Device signed out successfully.');
     }
@@ -42,7 +43,8 @@ class DeviceSessionController extends Controller
 
         foreach ($others as $session) {
             DB::table('sessions')->where('id', $session->session_id)->delete();
-            $session->update(['is_current' => false, 'logged_out_at' => now()]);
+            $session->update(['is_current' => false, 'logged_out_at' => now(),
+                'tracking_key_hash' => null, 'tracking_revoked_at' => now()]);
         }
 
         return back()->with('status', 'All other devices have been signed out.');

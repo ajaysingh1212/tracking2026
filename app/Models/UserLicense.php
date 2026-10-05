@@ -100,4 +100,12 @@ class UserLicense extends Model
             ->where('status', LicenseStatus::Active)
             ->where(fn (Builder $query) => $query->whereNull('expiry_date')->orWhere('expiry_date', '>', now()));
     }
+
+    public function scopeForTrackedUser(Builder $query, int $userId): Builder
+    {
+        return $query->where(fn (Builder $binding) => $binding
+            ->where('assigned_tracked_user_id', $userId)
+            ->orWhere(fn (Builder $owned) => $owned->where('user_id', $userId)
+                ->whereNull('assigned_tracked_user_id')));
+    }
 }

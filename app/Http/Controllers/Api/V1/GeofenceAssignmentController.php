@@ -81,6 +81,9 @@ class GeofenceAssignmentController extends Controller
     {
         $this->authorize('update', $geofenceAssignment);
 
+        abort_unless($request->user()->can('manage geofences')
+            || app(RelationshipAuthorizationService::class)->canTrackUser($request->user(), $geofenceAssignment->user), 403);
+
         $geofenceAssignment->update($request->validated());
 
         return new GeofenceAssignmentResource($geofenceAssignment->load(self::EAGER_LOAD));

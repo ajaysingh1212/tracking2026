@@ -48,12 +48,18 @@ class GpsIngestionService
         $deviceSession = $this->resolveDeviceSession($user, $dto);
         $status = $deviceSession->status;
 
+        app(LiveLocationService::class)->publish($user, $deviceSession, $dto);
+
         $this->recordPacketDiagnostics($user, $deviceSession, $dto, $status);
 
         LocationReceived::dispatch($user, $dto);
         LocationValidated::dispatch($user, $dto);
 
-        $distanceFilterMeters = $user->trackingPreference?->distance_filter_meters ?? 25;
+        $distanceFilterMeters = app(\App\Services\SettingsService::class)->locationSaveRadius($user);
+
+        if ($status?->lastLocation && $dto->recordedAt->lte($status->lastLocation->recorded_at)) {
+            return IngestResult::rejected($deviceSession->id, 'stale');
+        }
 
         $decision = $this->optimizer->shouldAccept($status, $dto, $distanceFilterMeters);
 
@@ -65,7 +71,7 @@ class GpsIngestionService
 
         if ($async) {
             StoreGpsLocationJob::dispatch($user->id, $deviceSession->id, $trackingSession->id, $dto)
-                ->onConnection('redis');
+                ->onConnection(config('queue.default'));
         } else {
             (new StoreGpsLocationJob($user->id, $deviceSession->id, $trackingSession->id, $dto))
                 ->handle($this->optimizer);

@@ -31,8 +31,21 @@ class StoreGpsLocationJob implements ShouldQueue
 
     public function handle(CoordinateOptimizerService $optimizer): void
     {
+        \Illuminate\Support\Facades\Cache::lock('gps.store.'.$this->deviceSessionId, 15)
+            ->block(5, fn () => \Illuminate\Support\Facades\DB::transaction(fn () => $this->store($optimizer)));
+    }
+
+    private function store(CoordinateOptimizerService $optimizer): void
+    {
         $status = DeviceStatus::query()->where('device_session_id', $this->deviceSessionId)->first();
         $previous = $status?->lastLocation;
+
+        $user = \App\Models\User::findOrFail($this->userId);
+        $radius = app(\App\Services\SettingsService::class)->locationSaveRadius($user);
+        if (($previous && $this->location->recordedAt->lte($previous->recorded_at))
+            || ! $optimizer->shouldAccept($status, $this->location, $radius)->accepted) {
+            return;
+        }
 
         $gpsLocation = GpsLocation::create([
             'user_id' => $this->userId,

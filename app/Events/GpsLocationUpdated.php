@@ -59,6 +59,9 @@ class GpsLocationUpdated implements ShouldBroadcastNow, ShouldRescue
             'bearing' => $this->location->bearing !== null ? (float) $this->location->bearing : null,
             'heading' => $this->location->heading !== null ? (float) $this->location->heading : null,
             'battery_level' => $this->location->battery_level,
+            'network_type' => $this->location->network_type,
+            'is_gps_enabled' => true,
+            'is_internet_enabled' => true,
             'movement_status' => (float) ($this->location->speed ?? 0) > self::MOVING_SPEED_MPS ? 'moving' : 'idle',
             'recorded_at' => $this->location->recorded_at->toIso8601String(),
         ];

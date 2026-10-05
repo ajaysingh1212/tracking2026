@@ -3,6 +3,8 @@ import { Modal } from 'bootstrap';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { mountReportCharts } from './report-charts';
+import { RouteHistory } from './route-history';
+import { geofenceContains } from './map-geometry';
 
 const LIGHT_TILES = {
     url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -60,38 +62,6 @@ function complianceClass(status) {
     return 'tracker-status-pending';
 }
 
-function distanceMeters(lat1, lng1, lat2, lng2) {
-    const radius = 6371000;
-    const toRadians = (value) => value * Math.PI / 180;
-    const latDelta = toRadians(lat2 - lat1);
-    const lngDelta = toRadians(lng2 - lng1);
-    const a = Math.sin(latDelta / 2) ** 2
-        + Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(lngDelta / 2) ** 2;
-
-    return radius * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-function geofenceContains(geofence, lat, lng) {
-    if (geofence.type === 'circle') {
-        return distanceMeters(lat, lng, Number(geofence.center_lat), Number(geofence.center_lng)) <= Number(geofence.radius_meters);
-    }
-
-    const points = geofence.points ?? [];
-    if (points.length < 3) return true;
-
-    let inside = false;
-    for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
-        const yi = Number(points[i].latitude);
-        const xi = Number(points[i].longitude);
-        const yj = Number(points[j].latitude);
-        const xj = Number(points[j].longitude);
-        const intersects = ((yi > lat) !== (yj > lat))
-            && (lng < ((xj - xi) * (lat - yi)) / ((yj - yi) || Number.EPSILON) + xi);
-        if (intersects) inside = !inside;
-    }
-
-    return inside;
-}
 
 class LiveMap {
     constructor(containerId, people) {
@@ -125,6 +95,8 @@ class LiveMap {
         people.forEach((person) => this._updateGeofenceState(person));
         this._renderGeofenceAlerts();
         this._bindReportModal();
+        this.routeHistory = new RouteHistory(this.people);
+        this._pollSnapshot();
     }
 
     _placeMarker(person) {
@@ -213,12 +185,14 @@ class LiveMap {
                 <div>Network: ${person.networkType || '—'}</div>
                 <div>Last location: ${formatLastSeen(person.lastSeen)}</div>
                 <div>Assigned geofences: ${(person.geofences ?? []).length}</div>
+                ${person.canRouteHistory ? `<button type="button" class="btn btn-sm tracker-outline-btn" data-route-history="${person.id}" title="Route history" aria-label="Route history"><i class="fa-solid fa-route"></i></button>` : ''}
                 ${person.isSelf ? `<div>Tracked by: ${person.trackedBy?.length ? person.trackedBy.join(', ') : 'No one right now'}</div>` : ''}
             </div>
         `;
     }
 
     _subscribe(person) {
+        if (!window.Echo) return;
         const channel = window.Echo.private(`App.Models.User.${person.id}`);
 
         channel.listen('.gps.location.updated', (payload) => this._onLocationUpdate(person.id, payload));
@@ -261,6 +235,7 @@ class LiveMap {
         const person = this.people.get(personId);
 
         if (!person) return;
+        if (person.lastSeen && new Date(payload.recorded_at) <= new Date(person.lastSeen)) return;
 
         const from = { lat: person.lat ?? payload.latitude, lng: person.lng ?? payload.longitude };
         const to = { lat: payload.latitude, lng: payload.longitude };
@@ -359,13 +334,122 @@ class LiveMap {
         this._updateListRow(personId, person);
     }
 
+    async _pollSnapshot() {
+        try {
+            const { data } = await window.axios.get('/live-map/snapshot', { timeout: 8000 });
+            const allowed = new Set(data.people.map((person) => person.id));
+            for (const [id] of this.people) {
+                if (!allowed.has(id)) {
+                    const marker = this.markers.get(id);
+                    if (marker) this.map.removeLayer(marker);
+                    this.markers.delete(id);
+                    this.people.delete(id);
+                    window.Echo?.leave(`App.Models.User.${id}`);
+                    document.querySelector(`[data-person-row="${id}"]`)?.remove();
+                }
+            }
+            data.people.forEach((snapshot) => {
+                if (!this.people.has(snapshot.id)) {
+                    this.people.set(snapshot.id, { ...snapshot, lastSeen: null });
+                    this._appendPersonRow(snapshot);
+                    this._subscribe(snapshot);
+                }
+                const person = this.people.get(snapshot.id);
+                person.geofences = snapshot.geofences;
+                person.canRouteHistory = snapshot.canRouteHistory;
+                document.querySelector(`[data-person-row="${snapshot.id}"] [data-route-history]`)?.classList.toggle('d-none', !snapshot.canRouteHistory);
+                if (snapshot.lat !== null && snapshot.lng !== null) {
+                    this._onLocationUpdate(snapshot.id, {
+                        latitude: snapshot.lat, longitude: snapshot.lng,
+                        speed: snapshot.speed, bearing: snapshot.bearing,
+                        battery_level: snapshot.battery, network_type: snapshot.networkType,
+                        is_gps_enabled: snapshot.gpsEnabled,
+                        is_internet_enabled: snapshot.internetEnabled,
+                        movement_status: snapshot.movementStatus, recorded_at: snapshot.lastSeen,
+                    });
+                }
+                Object.assign(person, {
+                    battery: snapshot.battery, gpsEnabled: snapshot.gpsEnabled,
+                    internetEnabled: snapshot.internetEnabled, networkType: snapshot.networkType,
+                });
+                this._onPresenceChange(snapshot.id, {
+                    is_online: snapshot.isOnline, last_activity_at: snapshot.lastActivity,
+                });
+                this._updateGeofenceState(person);
+            });
+            this._renderGeofenceAlerts();
+            this.routeHistory?.checkAccess();
+            const count = document.getElementById('live-map-people-count');
+            if (count) count.textContent = `${this.people.size} visible`;
+            document.querySelector('#live-map-people-list .tracker-empty-state')
+                ?.classList.toggle('d-none', this.people.size > 0);
+        } catch (error) {
+            if ([401, 403, 419].includes(error.response?.status)) return;
+        }
+        this.pollTimer = window.setTimeout(() => this._pollSnapshot(), 3000);
+    }
+
     _setMarkerOnline(marker, isOnline) {
         const el = marker.getElement();
 
         el?.classList.toggle('tracker-map-marker-offline', !isOnline);
     }
 
+    _appendPersonRow(person) {
+        const list = document.getElementById('live-map-people-list');
+        if (!list) return;
+        const row = document.createElement('div');
+        row.className = 'tracker-map-person-row';
+        row.classList.toggle('tracker-map-person-row-self', person.isSelf);
+        row.dataset.personRow = person.id;
+        row.setAttribute('role', 'button');
+        const avatar = document.createElement('div');
+        avatar.className = 'tracker-avatar-sm';
+        avatar.textContent = person.name.charAt(0).toUpperCase();
+        const copy = document.createElement('div');
+        copy.className = 'tracker-map-person-copy';
+        const name = document.createElement('strong');
+        name.textContent = person.name;
+        copy.append(name);
+        for (const field of ['status', 'movement', 'last-seen', 'geofence-warning']) {
+            const label = document.createElement('span');
+            label.dataset.field = field;
+            label.className = field === 'status' ? 'tracker-status-pill' : 'text-muted small';
+            if (field === 'geofence-warning') {
+                label.className = 'tracker-status-pill tracker-status-danger d-none';
+                label.textContent = 'Outside geofence';
+            }
+            copy.append(label);
+        }
+        const report = document.createElement('button');
+        let history;
+        if (person.canRouteHistory) {
+            history = document.createElement('button');
+            history.type = 'button';
+            history.className = 'btn btn-sm tracker-outline-btn';
+            history.dataset.routeHistory = person.id;
+            history.title = 'Route history';
+            history.setAttribute('aria-label', 'Route history');
+            const icon = document.createElement('i');
+            icon.className = 'fa-solid fa-route';
+            history.append(icon);
+        }
+        report.type = 'button';
+        report.className = 'btn btn-sm tracker-outline-btn tracker-live-report-btn';
+        report.dataset.reportUser = person.id;
+        report.title = 'Open reports';
+        const icon = document.createElement('i');
+        icon.className = 'fa-solid fa-chart-pie';
+        report.append(icon);
+        row.append(avatar, copy, report);
+        if (history) row.append(history);
+        list.append(row);
+    }
+
     _tween(marker, from, to) {
+        if (marker._gpsAnimation) cancelAnimationFrame(marker._gpsAnimation);
+        const current = marker.getLatLng();
+        from = { lat: current.lat, lng: current.lng };
         const start = performance.now();
 
         const step = (now) => {
@@ -376,11 +460,11 @@ class LiveMap {
             marker.setLatLng([lat, lng]);
 
             if (progress < 1) {
-                requestAnimationFrame(step);
+                marker._gpsAnimation = requestAnimationFrame(step);
             }
         };
 
-        requestAnimationFrame(step);
+        marker._gpsAnimation = requestAnimationFrame(step);
     }
 
     _updateListRow(personId, person) {
@@ -411,7 +495,10 @@ class LiveMap {
             document.createTextNode(person.lat !== null && person.lat !== undefined ? formatLastSeen(person.lastSeen) : (person.isOnline ? 'No location shared yet' : 'Never logged in')),
         );
 
-        row.addEventListener('click', () => {
+        if (row.dataset.gpsBound) return;
+        row.dataset.gpsBound = 'true';
+        row.addEventListener('click', (event) => {
+            if (event.target.closest('button, a')) return;
             this._showGeofencesFor(person);
 
             if (person.lat === null || person.lat === undefined) return;
@@ -422,15 +509,15 @@ class LiveMap {
     }
 
     _bindReportModal() {
-        document.querySelectorAll('[data-report-user]').forEach((button) => {
-            button.addEventListener('click', (event) => {
+        document.addEventListener('click', (event) => {
+                const button = event.target.closest('[data-report-user]');
+                if (!button) return;
                 event.stopPropagation();
                 this.reportUserId = Number(button.dataset.reportUser);
                 const person = this.people.get(this.reportUserId);
                 document.getElementById('live-map-report-title').textContent = `${person?.name ?? 'Employee'} Reports`;
                 this.reportModal?.show();
                 this._loadReport();
-            });
         });
 
         document.getElementById('live-report-load')?.addEventListener('click', () => this._loadReport());

@@ -53,6 +53,9 @@ class GeofenceEvaluationService
 
     private function evaluateGeofence(Geofence $geofence, GpsLocation $location, ?GeofenceEvent $lastEvent): void
     {
+        if ($lastEvent && $lastEvent->occurred_at->gte($location->recorded_at)) {
+            return;
+        }
         $isInside = $this->geometry->containsPoint($geofence, (float) $location->latitude, (float) $location->longitude);
         $wasInside = $lastEvent?->type === GeofenceEventType::Entered;
 
@@ -92,7 +95,7 @@ class GeofenceEvaluationService
         $event = GeofenceEvent::create([
             'geofence_id' => $geofence->id,
             'user_id' => $location->user_id,
-            'gps_location_id' => $location->id,
+            'gps_location_id' => $location->exists ? $location->id : null,
             'type' => $type,
             'latitude' => $location->latitude,
             'longitude' => $location->longitude,
