@@ -266,9 +266,9 @@ body {
     width: 38px;
     height: 38px;
     display: grid;
-    place-items: center;
+    place-items: center; 
     border-radius: 12px;
-    background: rgba(255, 255, 255, 0.08);
+    background: #dfded9ad;
     flex-shrink: 0;
 }
 
