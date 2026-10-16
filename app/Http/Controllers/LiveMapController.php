@@ -88,6 +88,33 @@ class LiveMapController extends Controller
             })
             ->values();
 
+        // Keep expired relationships visible for renewal, without granting GPS access.
+        $expiredRelations = $user->trackedUsers()->where('status', UserStatus::Active)
+            ->with(['trackedUser', 'userLicense.plan'])->get();
+        foreach ($expiredRelations as $relation) {
+            $license = $relation->userLicense;
+            if (! $relation->trackedUser || ! $license?->isExpired()
+                || $people->contains('id', $relation->tracked_user_id)) continue;
+            $people->push([
+                'id' => $relation->tracked_user_id, 'name' => $relation->trackedUser->name,
+                'isSelf' => false, 'trackedBy' => [], 'canRouteHistory' => false,
+                'licenseExpired' => true, 'canReport' => false,
+                'renewUrl' => route($license->plan?->is_free ? 'my-licenses.plans' : 'my-licenses.index'),
+                'lat' => null, 'lng' => null, 'speed' => null, 'bearing' => null,
+                'battery' => null, 'gpsEnabled' => null, 'internetEnabled' => null,
+                'networkType' => null, 'movementStatus' => 'idle', 'isOnline' => false,
+                'lastSeen' => null, 'lastActivity' => null, 'geofences' => [],
+            ]);
+        }
+
+        $markerPreferences = \App\Models\MapMarkerPreference::where('viewer_user_id', $user->id)
+            ->get()->keyBy('tracked_user_id');
+        $people = $people->map(function ($person) use ($markerPreferences) {
+            $person['marker'] = $markerPreferences->get($person['id'])?->markerData()
+                ?? ['kind' => 'person', 'imageUrl' => null];
+            return $person;
+        });
+
         return view('live-map.index', [
             'people' => $people,
             'selfTrackingEnabled' => $selfTrackingEnabled,

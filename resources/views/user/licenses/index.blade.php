@@ -60,7 +60,7 @@
                             <td>{{ $license->purchase_date?->format('d M Y') }}</td>
                             <td>{{ $license->expiry_date?->format('d M Y') ?? 'Starts on first use' }}</td>
                             <td>@include('admin.partials.status-pill', ['status' => $license->payment_status])</td>
-                            <td>@include('admin.partials.status-pill', ['status' => $license->status])</td>
+                            <td>@include('admin.partials.status-pill', ['status' => $license->status === \App\Enums\LicenseStatus::Active && $license->isExpired() ? \App\Enums\LicenseStatus::Expired : $license->status])</td>
                             <td>
                                 @if ($license->plan && $license->plan->type->value !== 'lifetime' && ! $license->plan->is_free)
                                     ₹{{ number_format($license->plan->renewal_price, 2) }}
@@ -77,6 +77,9 @@
                                         @csrf
                                         <button type="submit" class="btn btn-sm tracker-outline-btn"><i class="fa-solid fa-user-check me-1"></i>Use for me</button>
                                     </form>
+                                @endif
+                                @if ($license->isExpired() && $license->plan?->is_free)
+                                    <a href="{{ route('my-licenses.plans') }}" class="btn btn-sm tracker-outline-btn"><i class="fa-solid fa-rotate"></i> Renew with paid plan</a>
                                 @endif
                                 @if ($license->assigned_tracked_user_id && $license->plan && $license->plan->type->value !== 'lifetime' && ! $license->plan->is_free && $license->status->value !== 'cancelled')
                                     <form method="POST" action="{{ route('my-licenses.renew', $license) }}">

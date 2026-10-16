@@ -5,6 +5,8 @@ import 'leaflet/dist/leaflet.css';
 import { mountReportCharts } from './report-charts';
 import { RouteHistory } from './route-history';
 import { geofenceContains } from './map-geometry';
+import { LiveMarkerMotion } from './live-marker-motion';
+import '../css/live-map.css';
 
 const LIGHT_TILES = {
     url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -19,16 +21,37 @@ const DARK_TILES = {
 };
 
 const DEFAULT_CENTER = [20.5937, 78.9629];
-const TWEEN_MS = 1000;
 
-function markerIcon(initial, isOnline, isSelf = false) {
-    const classes = ['tracker-map-marker', isOnline ? '' : 'tracker-map-marker-offline', isSelf ? 'tracker-map-marker-self' : ''];
+const markerOptions = JSON.parse(document.getElementById('map-marker-options')?.textContent ?? '{}');
+
+function markerContent(initial, preference) {
+    if (preference?.kind === 'other' && preference.imageUrl) {
+        const image = document.createElement('img');
+        image.src = preference.imageUrl;
+        image.alt = 'Custom map icon';
+        image.style.cssText = 'width:38px;height:38px;object-fit:contain;border-radius:4px';
+        return image.outerHTML;
+    }
+    if (preference?.kind && preference.kind !== 'person') {
+        return `<i class="fa-solid ${markerOptions[preference.kind]?.[1] ?? 'fa-car'}" aria-hidden="true"></i>`;
+    }
+    return initial;
+}
+
+function markerState(person) {
+    return person.licenseExpired ? 'expired' : !person.isOnline ? 'offline'
+        : person.movementStatus === 'moving' ? 'moving' : 'idle';
+}
+
+function markerIcon(initial, isOnline, isSelf = false, preference = null, movement = 'idle') {
+    const classes = ['tracker-map-marker', `tracker-map-marker-${isOnline ? movement : 'offline'}`, isSelf ? 'tracker-map-marker-self' : ''];
 
     return L.divIcon({
         className: classes.filter(Boolean).join(' '),
-        html: `<span class="tracker-map-marker-arrow"></span><span class="tracker-map-marker-dot">${initial}</span>`,
-        iconSize: [36, 36],
-        iconAnchor: [18, 18],
+        html: `<span class="tracker-map-marker-arrow"></span><span class="tracker-map-marker-dot">${markerContent(initial, preference)}</span>`,
+        iconSize: [52, 52],
+        iconAnchor: [26, 26],
+        popupAnchor: [0, -28],
     });
 }
 
@@ -67,6 +90,7 @@ class LiveMap {
     constructor(containerId, people) {
         this.people = new Map(people.map((person) => [person.id, person]));
         this.markers = new Map();
+        this._bindMarkerEditor();
         this.reportModalEl = document.getElementById('live-map-report-modal');
         this.reportModal = this.reportModalEl ? new Modal(this.reportModalEl) : null;
         this.reportUserId = null;
@@ -99,9 +123,82 @@ class LiveMap {
         this._pollSnapshot();
     }
 
+    _refreshMarkerIcon(person) {
+        const marker = this.markers.get(person.id);
+        if (!marker) return;
+        marker.setIcon(markerIcon(person.name.charAt(0).toUpperCase(), person.isOnline, person.isSelf, person.marker, person.movementStatus));
+        const arrow = marker.getElement()?.querySelector('.tracker-map-marker-arrow');
+        if (arrow && person.bearing != null) arrow.style.transform = `translateX(-50%) rotate(${person.bearing}deg)`;
+    }
+
+    _bindMarkerEditor() {
+        const element = document.getElementById('map-marker-modal');
+        if (!element) return;
+        const modal = new Modal(element);
+        const form = document.getElementById('map-marker-form');
+        const kind = document.getElementById('map-marker-kind');
+        const image = document.getElementById('map-marker-image');
+        const error = document.getElementById('map-marker-error');
+        const save = document.getElementById('map-marker-save');
+        let selectedId = null;
+        let previewUrl = null;
+        const preview = () => {
+            if (previewUrl) URL.revokeObjectURL(previewUrl);
+            previewUrl = image.files[0] ? URL.createObjectURL(image.files[0]) : null;
+            document.getElementById('map-marker-upload').classList.toggle('d-none', kind.value !== 'other');
+            const person = this.people.get(selectedId);
+            document.getElementById('map-marker-preview').innerHTML = markerContent(
+                person?.name.charAt(0).toUpperCase() ?? '',
+                { kind: kind.value, imageUrl: previewUrl ?? person?.marker?.imageUrl },
+            );
+        };
+        document.addEventListener('click', (event) => {
+            const button = event.target.closest('[data-marker-edit]');
+            if (!button) return;
+            selectedId = Number(button.dataset.markerEdit);
+            const person = this.people.get(selectedId);
+            if (!person) return;
+            form.reset();
+            kind.value = person.marker?.kind ?? 'person';
+            document.getElementById('map-marker-title').textContent = `${person.name} - Map icon`;
+            error.textContent = '';
+            preview();
+            modal.show();
+        });
+        kind.addEventListener('change', preview);
+        image.addEventListener('change', preview);
+        element.addEventListener('hidden.bs.modal', () => {
+            if (previewUrl) URL.revokeObjectURL(previewUrl);
+            previewUrl = null;
+        });
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const personId = selectedId;
+            const data = new FormData();
+            data.append('kind', kind.value);
+            if (kind.value === 'other' && image.files[0]) data.append('image', image.files[0]);
+            save.disabled = true;
+            error.textContent = '';
+            try {
+                const response = await window.axios.post(`/live-map/marker/${personId}`, data);
+                const person = this.people.get(personId);
+                if (person) {
+                    person.marker = response.data;
+                    this._refreshMarkerIcon(person);
+                }
+                modal.hide();
+            } catch (failure) {
+                error.textContent = Object.values(failure.response?.data?.errors ?? {}).flat().join(' ')
+                    || 'Could not save map icon. Please try again.';
+            } finally {
+                save.disabled = false;
+            }
+        });
+    }
+
     _placeMarker(person) {
         const marker = L.marker([person.lat, person.lng], {
-            icon: markerIcon(person.name.charAt(0).toUpperCase(), person.isOnline, person.isSelf),
+            icon: markerIcon(person.name.charAt(0).toUpperCase(), person.isOnline, person.isSelf, person.marker, person.movementStatus),
         }).addTo(this.map);
 
         marker.bindPopup(this._popupHtml(person));
@@ -192,7 +289,7 @@ class LiveMap {
     }
 
     _subscribe(person) {
-        if (!window.Echo) return;
+        if (!window.Echo || person.licenseExpired) return;
         const channel = window.Echo.private(`App.Models.User.${person.id}`);
 
         channel.listen('.gps.location.updated', (payload) => this._onLocationUpdate(person.id, payload));
@@ -234,10 +331,10 @@ class LiveMap {
     _onLocationUpdate(personId, payload) {
         const person = this.people.get(personId);
 
-        if (!person) return;
+        if (!person || person.licenseExpired) return;
         if (person.lastSeen && new Date(payload.recorded_at) <= new Date(person.lastSeen)) return;
 
-        const from = { lat: person.lat ?? payload.latitude, lng: person.lng ?? payload.longitude };
+        const sampleInterval = new Date(payload.recorded_at).getTime() - new Date(person.lastSeen).getTime();
         const to = { lat: payload.latitude, lng: payload.longitude };
 
         Object.assign(person, {
@@ -259,19 +356,20 @@ class LiveMap {
         let marker = this.markers.get(personId);
 
         if (!marker) {
-            marker = L.marker([to.lat, to.lng], { icon: markerIcon(person.name.charAt(0).toUpperCase(), true, person.isSelf) }).addTo(this.map);
+            marker = L.marker([to.lat, to.lng], { icon: markerIcon(person.name.charAt(0).toUpperCase(), true, person.isSelf, person.marker, person.movementStatus) }).addTo(this.map);
             marker.bindPopup(this._popupHtml(person));
             marker.on('click', () => this._showGeofencesFor(person));
             this.markers.set(personId, marker);
         } else {
-            this._tween(marker, from, to);
+            marker._gpsMotion ??= new LiveMarkerMotion(marker);
+            marker._gpsMotion.push(to, sampleInterval);
             marker.setPopupContent(this._popupHtml(person));
-            this._setMarkerOnline(marker, true);
+            this._setMarkerOnline(marker, true, person.movementStatus);
         }
 
         if (payload.bearing !== null) {
             const arrow = marker.getElement()?.querySelector('.tracker-map-marker-arrow');
-            if (arrow) arrow.style.transform = `rotate(${payload.bearing}deg)`;
+            if (arrow) arrow.style.transform = `translateX(-50%) rotate(${payload.bearing}deg)`;
         }
 
         this._updateListRow(personId, person);
@@ -327,7 +425,7 @@ class LiveMap {
         const marker = this.markers.get(personId);
 
         if (marker) {
-            this._setMarkerOnline(marker, payload.is_online);
+            this._setMarkerOnline(marker, payload.is_online, person.movementStatus);
             marker.setPopupContent(this._popupHtml(person));
         }
 
@@ -341,7 +439,10 @@ class LiveMap {
             for (const [id] of this.people) {
                 if (!allowed.has(id)) {
                     const marker = this.markers.get(id);
-                    if (marker) this.map.removeLayer(marker);
+                    if (marker) {
+                        marker._gpsMotion?.stop();
+                        this.map.removeLayer(marker);
+                    }
                     this.markers.delete(id);
                     this.people.delete(id);
                     window.Echo?.leave(`App.Models.User.${id}`);
@@ -355,6 +456,24 @@ class LiveMap {
                     this._subscribe(snapshot);
                 }
                 const person = this.people.get(snapshot.id);
+                if (JSON.stringify(person.marker) !== JSON.stringify(snapshot.marker)) {
+                    person.marker = snapshot.marker;
+                    this._refreshMarkerIcon(person);
+                }
+                const wasExpired = person.licenseExpired;
+                person.licenseExpired = snapshot.licenseExpired ?? false;
+                person.canReport = snapshot.canReport ?? true;
+                person.renewUrl = snapshot.renewUrl;
+                if (person.licenseExpired) {
+                    const marker = this.markers.get(snapshot.id);
+                    marker?._gpsMotion?.stop();
+                    if (marker) this.map.removeLayer(marker);
+                    this.markers.delete(snapshot.id);
+                    window.Echo?.leave(`App.Models.User.${snapshot.id}`);
+                    Object.assign(person, { lat: null, lng: null, lastSeen: null, speed: null, geofences: [] });
+                } else if (wasExpired) {
+                    this._subscribe(person);
+                }
                 person.geofences = snapshot.geofences;
                 person.canRouteHistory = snapshot.canRouteHistory;
                 document.querySelector(`[data-person-row="${snapshot.id}"] [data-route-history]`)?.classList.toggle('d-none', !snapshot.canRouteHistory);
@@ -389,10 +508,14 @@ class LiveMap {
         this.pollTimer = window.setTimeout(() => this._pollSnapshot(), 3000);
     }
 
-    _setMarkerOnline(marker, isOnline) {
+    _setMarkerOnline(marker, isOnline, movement = 'idle') {
         const el = marker.getElement();
+        if (!isOnline) marker._gpsMotion?.stop();
 
         el?.classList.toggle('tracker-map-marker-offline', !isOnline);
+        el?.classList.toggle('tracker-map-marker-moving', isOnline && movement === 'moving');
+        el?.classList.toggle('tracker-map-marker-idle', isOnline && movement !== 'moving');
+        el?.setAttribute('aria-label', !isOnline ? 'Offline' : movement === 'moving' ? 'Moving' : 'Stationary');
     }
 
     _appendPersonRow(person) {
@@ -446,31 +569,41 @@ class LiveMap {
         list.append(row);
     }
 
-    _tween(marker, from, to) {
-        if (marker._gpsAnimation) cancelAnimationFrame(marker._gpsAnimation);
-        const current = marker.getLatLng();
-        from = { lat: current.lat, lng: current.lng };
-        const start = performance.now();
-
-        const step = (now) => {
-            const progress = Math.min(1, (now - start) / TWEEN_MS);
-            const lat = from.lat + (to.lat - from.lat) * progress;
-            const lng = from.lng + (to.lng - from.lng) * progress;
-
-            marker.setLatLng([lat, lng]);
-
-            if (progress < 1) {
-                marker._gpsAnimation = requestAnimationFrame(step);
-            }
-        };
-
-        marker._gpsAnimation = requestAnimationFrame(step);
-    }
-
     _updateListRow(personId, person) {
         const row = document.querySelector(`[data-person-row="${personId}"]`);
 
         if (!row) return;
+        row.dataset.state = markerState(person);
+        const avatar = row.querySelector('.tracker-avatar-sm');
+        if (avatar) avatar.innerHTML = markerContent(person.name.charAt(0).toUpperCase(), person.marker);
+        if (!row.querySelector('[data-marker-edit]')) {
+            const edit = document.createElement('button');
+            edit.type = 'button';
+            edit.className = 'btn btn-sm tracker-outline-btn';
+            edit.dataset.markerEdit = personId;
+            edit.title = 'Edit map icon';
+            edit.setAttribute('aria-label', 'Edit map icon');
+            edit.innerHTML = '<i class="fa-solid fa-car-side"></i>';
+            row.append(edit);
+        }
+
+        let expired = row.querySelector('[data-field="license-expired"]');
+        let renew = row.querySelector('[data-license-renew]');
+        if (!expired) {
+            expired = document.createElement('span');
+            expired.dataset.field = 'license-expired';
+            expired.className = 'tracker-status-pill tracker-status-danger';
+            expired.textContent = 'License expired';
+            renew = document.createElement('a');
+            renew.dataset.licenseRenew = '';
+            renew.className = 'btn btn-sm tracker-outline-btn';
+            renew.innerHTML = '<i class="fa-solid fa-rotate"></i> Renew';
+            row.querySelector('.tracker-map-person-copy').append(expired, renew);
+        }
+        expired.classList.toggle('d-none', !person.licenseExpired);
+        renew.classList.toggle('d-none', !person.licenseExpired);
+        renew.href = person.renewUrl ?? '#';
+        row.querySelector('[data-report-user]')?.classList.toggle('d-none', person.canReport === false);
 
         const statusEl = row.querySelector('[data-field="status"]');
 
@@ -503,7 +636,7 @@ class LiveMap {
 
             if (person.lat === null || person.lat === undefined) return;
 
-            this.map.flyTo([person.lat, person.lng], 15);
+            this.map.flyTo(this.markers.get(personId)?.getLatLng() ?? [person.lat, person.lng], 15);
             this.markers.get(personId)?.openPopup();
         });
     }

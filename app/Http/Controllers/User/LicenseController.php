@@ -28,7 +28,7 @@ class LicenseController extends Controller
 
         return view('user.licenses.index', [
             'licenses' => $user->userLicenses()->with(['plan', 'assignedTrackedUser'])->latest()->paginate(10),
-            'activeLicense' => $user->userLicenses()->with('plan')->where('status', 'active')->latest('expiry_date')->first(),
+            'activeLicense' => $user->userLicenses()->with('plan')->usable()->latest('expiry_date')->first(),
             'availableLicenses' => $user->userLicenses()->where('status', 'pending')->where('payment_status', 'paid')->count(),
             'trackedUsers' => $user->trackedUsers()->where('status', 'active')->count(),
             'transactions' => $user->licenseTransactions()->with(['plan', 'license'])->latest()->take(10)->get(),
