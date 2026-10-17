@@ -18,6 +18,7 @@ use Tests\TestCase;
 class TrackedUserGeofenceTest extends TestCase
 {
     use RefreshDatabase;
+    use \Tests\Concerns\CreatesTrackingLicense;
 
     public function test_regular_tracker_can_create_and_assign_a_geofence_only_to_their_tracked_user(): void
     {
@@ -31,6 +32,7 @@ class TrackedUserGeofenceTest extends TestCase
             'tracker_user_id' => $tracker->id,
             'tracked_user_id' => $tracked->id,
             'relationship_name' => 'Friend',
+            'user_license_id' => $this->trackingLicense($tracker, $tracked)->id,
             'status' => 'active',
         ]);
 
@@ -71,6 +73,7 @@ class TrackedUserGeofenceTest extends TestCase
             'tracker_user_id' => $tracker->id,
             'tracked_user_id' => $tracked->id,
             'relationship_name' => 'Friend',
+            'user_license_id' => $this->trackingLicense($tracker, $tracked)->id,
             'status' => 'active',
         ]);
         $geofence = Geofence::create([

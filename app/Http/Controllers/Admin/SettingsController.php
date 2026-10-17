@@ -24,6 +24,11 @@ class SettingsController extends Controller
     {
         $this->authorize('viewAny', Setting::class);
 
+        Setting::firstOrCreate(['group' => 'system', 'key' => 'location_save_radius_meters'], [
+            'value' => 25, 'type' => 'integer', 'is_public' => false,
+            'description' => 'Location history save radius in meters',
+        ]);
+
         $groups = Setting::orderBy('key')->get()->groupBy('group');
 
         return view('admin.settings.edit', ['groups' => $groups]);
@@ -37,6 +42,9 @@ class SettingsController extends Controller
         $groupSettings = Setting::where('group', $group)->where('type', '!=', 'file')->get();
 
         foreach ($groupSettings as $setting) {
+            if ($setting->key === 'location_save_radius_meters' && ! $request->has('values.location_save_radius_meters')) {
+                continue;
+            }
             if ($setting->type === 'secret' && blank($request->input("values.{$setting->key}"))) {
                 continue;
             }

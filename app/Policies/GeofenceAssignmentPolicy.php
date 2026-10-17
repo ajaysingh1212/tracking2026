@@ -9,7 +9,7 @@ class GeofenceAssignmentPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->canAny(['manage geofences', 'manage tracked geofences']);
+        return $user->canAny(['manage geofences', 'manage tracked geofences', 'use tracking workspace']);
     }
 
     public function view(User $user, GeofenceAssignment $geofenceAssignment): bool
@@ -21,7 +21,7 @@ class GeofenceAssignmentPolicy
 
     public function create(User $user): bool
     {
-        return $user->canAny(['manage geofences', 'manage tracked geofences']);
+        return $user->canAny(['manage geofences', 'manage tracked geofences', 'use tracking workspace']);
     }
 
     public function update(User $user, GeofenceAssignment $geofenceAssignment): bool

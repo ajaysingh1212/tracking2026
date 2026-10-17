@@ -25,7 +25,13 @@ class DeviceSession extends Model
         'last_activity_at',
         'logged_out_at',
         'is_current',
+        'tracking_license_id',
+        'tracking_key_hash',
+        'tracking_registered_at',
+        'tracking_revoked_at',
     ];
+
+    protected $hidden = ['tracking_key_hash'];
 
     protected function casts(): array
     {
@@ -34,6 +40,8 @@ class DeviceSession extends Model
             'last_activity_at' => 'datetime',
             'logged_out_at' => 'datetime',
             'is_current' => 'boolean',
+            'tracking_registered_at' => 'datetime',
+            'tracking_revoked_at' => 'datetime',
         ];
     }
 

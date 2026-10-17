@@ -20,6 +20,19 @@ Route::get('/live-map', [LiveMapController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('live-map.index');
 
+Route::get('/live-map/snapshot', [LiveMapController::class, 'snapshot'])
+    ->middleware(['auth', 'verified'])->name('live-map.snapshot');
+
+Route::post('/live-map/marker/{user}', [\App\Http\Controllers\MapMarkerController::class, 'update'])
+    ->middleware(['auth', 'verified'])->name('live-map.marker.update');
+Route::get('/live-map/marker/{user}/image', [\App\Http\Controllers\MapMarkerController::class, 'image'])
+    ->middleware(['auth', 'verified'])->name('live-map.marker.image');
+
+Route::get('/live-map/route-history/{user}/download', [\App\Http\Controllers\RouteHistoryController::class, 'download'])
+    ->middleware(['auth', 'verified'])->name('live-map.route-history.download');
+Route::get('/live-map/route-history/{user}', [\App\Http\Controllers\RouteHistoryController::class, 'index'])
+    ->middleware(['auth', 'verified'])->name('live-map.route-history');
+
 Route::post('/live-map/self-tracking', [LiveMapController::class, 'toggleSelfTracking'])
     ->middleware(['auth', 'verified'])
     ->name('live-map.self-tracking');

@@ -15,12 +15,6 @@ class CoordinateOptimizerService
 {
     private const EARTH_RADIUS_METERS = 6371000;
 
-    private const KEEPALIVE_SECONDS = 120;
-
-    private const BEARING_DELTA_THRESHOLD = 30.0;
-
-    private const SPEED_DELTA_THRESHOLD = 5.0;
-
     public function shouldAccept(?DeviceStatus $status, LocationUpdateData $incoming, int $distanceFilterMeters): OptimizerResult
     {
         $last = $status?->lastLocation;
@@ -40,22 +34,6 @@ class CoordinateOptimizerService
             return OptimizerResult::accept();
         }
 
-        if (abs($incoming->recordedAt->diffInSeconds($last->recorded_at)) >= self::KEEPALIVE_SECONDS) {
-            return OptimizerResult::accept();
-        }
-
-        if ($incoming->bearing !== null && $last->bearing !== null) {
-            if ($this->bearingDelta($incoming->bearing, (float) $last->bearing) > self::BEARING_DELTA_THRESHOLD) {
-                return OptimizerResult::accept();
-            }
-        }
-
-        if ($incoming->speed !== null && $last->speed !== null) {
-            if (abs($incoming->speed - (float) $last->speed) > self::SPEED_DELTA_THRESHOLD) {
-                return OptimizerResult::accept();
-            }
-        }
-
         return OptimizerResult::reject('throttled');
     }
 
@@ -72,10 +50,4 @@ class CoordinateOptimizerService
         return self::EARTH_RADIUS_METERS * $c;
     }
 
-    private function bearingDelta(float $a, float $b): float
-    {
-        $diff = abs($a - $b);
-
-        return $diff > 180 ? 360 - $diff : $diff;
-    }
 }

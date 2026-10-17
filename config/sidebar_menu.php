@@ -43,7 +43,7 @@ return [
         'label' => 'Monitoring',
         'icon' => 'fa-solid fa-chart-line',
         'items' => [
-            ['title' => 'Geofences', 'icon' => 'fa-solid fa-draw-polygon', 'route' => 'admin.geofences.index', 'permission' => 'manage tracked geofences', 'description' => 'Zones and exit alerts for tracked people'],
+            ['title' => 'Geofences', 'icon' => 'fa-solid fa-draw-polygon', 'route' => 'admin.geofences.index', 'permission' => 'use tracking workspace', 'description' => 'Zones and exit alerts for tracked people'],
             ['title' => 'Analytics', 'icon' => 'fa-solid fa-chart-simple', 'route' => 'admin.monitoring.dashboard', 'permission' => 'manage geofences', 'description' => 'KPIs, trends, leaderboards'],
             ['title' => 'GPS History', 'icon' => 'fa-solid fa-route', 'route' => 'admin.monitoring.history', 'permission' => 'manage geofences', 'description' => 'History filters and timeline'],
             ['title' => 'Route Replay', 'icon' => 'fa-solid fa-play', 'route' => 'admin.monitoring.replay', 'permission' => 'manage geofences', 'description' => 'Smooth playback and route stats'],

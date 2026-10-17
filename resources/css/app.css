@@ -4,6 +4,17 @@
 @import "datatables.net-bs5/css/dataTables.bootstrap5.min.css";
 @import "datatables.net-responsive-bs5/css/responsive.bootstrap5.min.css";
 
+.route-replay-marker {
+    display: grid;
+    place-items: center;
+    border: 2px solid #ffffff;
+    border-radius: 50%;
+    background: #176cba;
+    color: #ffffff;
+    font-size: 16px;
+    box-shadow: 0 2px 5px #00000040;
+}
+
 :root {
     --tracker-bg: #eef3f7;
     --tracker-surface: #ffffff;

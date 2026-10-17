@@ -153,17 +153,10 @@ export class GpsWatcher {
         const { latitude, longitude, speed, heading, accuracy, altitude } = position.coords;
         const now = Date.now();
 
-        const distance = this.lastSentPosition
-            ? haversineMeters(this.lastSentPosition.lat, this.lastSentPosition.lng, latitude, longitude)
-            : null;
-
-        const adaptive = adaptiveThresholdForSpeed(speed);
-        const threshold = Math.max(adaptive ?? this.distanceFilterMeters, this.distanceFilterMeters);
         const secondsSinceLastSend = this.lastSentAt ? (now - this.lastSentAt) / 1000 : Infinity;
 
-        const shouldSend = distance === null
-            || distance >= threshold
-            || (adaptive === null && secondsSinceLastSend >= HEARTBEAT_SECONDS);
+        // Send live fixes independently of the server's history-save radius.
+        const shouldSend = secondsSinceLastSend >= 3;
 
         if (!shouldSend) {
             this.onStatus({ state: 'idle', accuracy, skipped: true });

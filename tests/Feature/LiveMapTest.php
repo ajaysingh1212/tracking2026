@@ -58,6 +58,48 @@ class LiveMapTest extends TestCase
         $response->assertViewHas('people', fn ($people) => $people->isEmpty());
     }
 
+    public function test_marker_preferences_save_per_viewer_and_reject_unrelated_users(): void
+    {
+        $this->seed(RoleAndPermissionSeeder::class);
+        $tracker = User::factory()->create();
+        $tracker->assignRole('User');
+        $tracked = User::factory()->create();
+        $stranger = User::factory()->create();
+        $this->connect($tracker, $tracked);
+        $this->actingAs($tracker)->postJson(route('live-map.marker.update', $tracked), ['kind' => 'bike'])
+            ->assertOk()->assertJsonPath('kind', 'bike');
+        $this->get(route('live-map.snapshot'))->assertOk()->assertJsonPath('people.0.marker.kind', 'bike');
+        $this->postJson(route('live-map.marker.update', $stranger), ['kind' => 'car'])->assertForbidden();
+        $this->postJson(route('live-map.marker.update', $tracked), ['kind' => 'invalid'])->assertUnprocessable();
+        $this->actingAs($stranger)->get(route('live-map.marker.image', $tracked))->assertForbidden();
+    }
+
+    public function test_custom_marker_image_can_be_uploaded_replaced_and_removed(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('local');
+        $this->seed(RoleAndPermissionSeeder::class);
+        $tracker = User::factory()->create();
+        $tracker->assignRole('User');
+        $tracked = User::factory()->create();
+        $this->connect($tracker, $tracked);
+        $this->actingAs($tracker)->postJson(route('live-map.marker.update', $tracked), ['kind' => 'other'])
+            ->assertUnprocessable();
+        $this->postJson(route('live-map.marker.update', $tracked), [
+            'kind' => 'other', 'image' => \Illuminate\Http\UploadedFile::fake()->image('marker.png'),
+        ])->assertOk()->assertJsonPath('kind', 'other');
+        $preference = \App\Models\MapMarkerPreference::firstOrFail();
+        $path = $preference->image_path;
+        $this->get(route('live-map.marker.image', $tracked))->assertOk();
+        $this->postJson(route('live-map.marker.update', $tracked), [
+            'kind' => 'other', 'image' => \Illuminate\Http\UploadedFile::fake()->image('new.png'),
+        ])->assertOk();
+        \Illuminate\Support\Facades\Storage::disk('local')->assertMissing($path);
+        $path = $preference->fresh()->image_path;
+        $this->postJson(route('live-map.marker.update', $tracked), ['kind' => 'car'])->assertOk();
+        \Illuminate\Support\Facades\Storage::disk('local')->assertMissing($path);
+        $this->get(route('live-map.marker.image', $tracked))->assertNotFound();
+    }
+
     public function test_a_regular_user_only_sees_their_tracked_people(): void
     {
         $this->seed(RoleAndPermissionSeeder::class);
@@ -114,7 +156,7 @@ class LiveMapTest extends TestCase
         });
     }
 
-    public function test_expired_license_hides_tracked_person_from_live_map(): void
+    public function test_expired_license_keeps_renewal_row_without_location_access(): void
     {
         $this->seed(RoleAndPermissionSeeder::class);
 
@@ -127,7 +169,13 @@ class LiveMapTest extends TestCase
         $response = $this->actingAs($tracker)->get(route('live-map.index'));
 
         $response->assertOk();
-        $response->assertViewHas('people', fn ($people) => ! $people->pluck('id')->contains($tracked->id));
+        $response->assertViewHas('people', function ($people) use ($tracked) {
+            $person = $people->firstWhere('id', $tracked->id);
+            return $person && $person['licenseExpired'] && ! $person['canReport']
+                && $person['lat'] === null && ! $person['canRouteHistory'];
+        });
+        $response->assertSee('License expired')->assertSee('Renew');
+        $this->get(route('my-licenses.index'))->assertOk()->assertSee('Expired');
     }
 
     public function test_a_privileged_role_sees_all_users(): void

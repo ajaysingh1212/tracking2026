@@ -7,6 +7,12 @@ use Illuminate\Support\Facades\Crypt;
 
 class SettingsService
 {
+    public function locationSaveRadius(\App\Models\User $user): int
+    {
+        return max(1, (int) $this->get('system', 'location_save_radius_meters',
+            $user->trackingPreference?->distance_filter_meters ?? 25));
+    }
+
     /** @return array<string, mixed> */
     public function forGroup(string $group): array
     {

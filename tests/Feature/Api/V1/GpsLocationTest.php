@@ -54,7 +54,7 @@ class GpsLocationTest extends TestCase
         $response->assertStatus(202)->assertJson(['accepted' => true]);
 
         Queue::assertPushed(StoreGpsLocationJob::class, function (StoreGpsLocationJob $job) {
-            return $job->connection === 'redis';
+            return $job->connection === config('queue.default');
         });
     }
 

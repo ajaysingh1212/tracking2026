@@ -41,24 +41,33 @@ class LiveMapController extends Controller
             ->exists();
 
         $visibleUsers = $this->access->visibleUsers($user);
+        $historyUserIds = \App\Models\TrackingRelation::where('tracker_user_id', $user->id)
+            ->usableForTracking()->pluck('tracked_user_id')->all();
 
         if ($selfTrackingEnabled) {
             $visibleUsers->push($user);
         }
 
         $people = $visibleUsers->unique('id')
-            ->map(function (User $person) use ($user) {
+            ->map(function (User $person) use ($user, $historyUserIds) {
                 $location = GpsLocation::where('user_id', $person->id)->latest('recorded_at')->first();
+                $live = app(\App\Services\Gps\LiveLocationService::class)->latest($person->id);
+                if ($live && (! $location || $live->recorded_at->gt($location->recorded_at))) {
+                    $location = $live;
+                }
                 $deviceStatus = DeviceStatus::query()
                     ->whereHas('deviceSession', fn (Builder $query) => $query->where('user_id', $person->id))
                     ->latest('last_ping_at')
                     ->first();
                 $speed = $location?->speed !== null ? (float) $location->speed : null;
+                $newerStatus = $deviceStatus?->last_ping_at
+                    && (! $location || $deviceStatus->last_ping_at->gte($location->recorded_at));
                 $isOnline = $this->presenceService->isOnline($person->id);
                 $isSelf = $person->id === $user->id;
 
                 return [
                     'id' => $person->id,
+                    'canRouteHistory' => in_array($person->id, $historyUserIds, true),
                     'name' => $person->name,
                     'isSelf' => $isSelf,
                     'trackedBy' => $isSelf ? $this->trackedByNames($person) : [],
@@ -66,10 +75,10 @@ class LiveMapController extends Controller
                     'lng' => $location ? (float) $location->longitude : null,
                     'speed' => $speed,
                     'bearing' => $location?->bearing !== null ? (float) $location->bearing : null,
-                    'battery' => $deviceStatus?->battery_level ?? $location?->battery_level,
-                    'gpsEnabled' => $deviceStatus?->is_gps_enabled,
+                    'battery' => $newerStatus ? $deviceStatus?->battery_level : ($location?->battery_level ?? $deviceStatus?->battery_level),
+                    'gpsEnabled' => $newerStatus ? $deviceStatus?->is_gps_enabled : ($live ? true : $deviceStatus?->is_gps_enabled),
                     'internetEnabled' => $deviceStatus?->is_internet_enabled,
-                    'networkType' => $deviceStatus?->network_type ?? $location?->network_type,
+                    'networkType' => $newerStatus ? $deviceStatus?->network_type : ($location?->network_type ?? $deviceStatus?->network_type),
                     'movementStatus' => $speed !== null && $speed > self::MOVING_SPEED_MPS ? 'moving' : 'idle',
                     'isOnline' => $isOnline,
                     'lastSeen' => $location?->recorded_at?->toIso8601String(),
@@ -78,6 +87,33 @@ class LiveMapController extends Controller
                 ];
             })
             ->values();
+
+        // Keep expired relationships visible for renewal, without granting GPS access.
+        $expiredRelations = $user->trackedUsers()->where('status', UserStatus::Active)
+            ->with(['trackedUser', 'userLicense.plan'])->get();
+        foreach ($expiredRelations as $relation) {
+            $license = $relation->userLicense;
+            if (! $relation->trackedUser || ! $license?->isExpired()
+                || $people->contains('id', $relation->tracked_user_id)) continue;
+            $people->push([
+                'id' => $relation->tracked_user_id, 'name' => $relation->trackedUser->name,
+                'isSelf' => false, 'trackedBy' => [], 'canRouteHistory' => false,
+                'licenseExpired' => true, 'canReport' => false,
+                'renewUrl' => route($license->plan?->is_free ? 'my-licenses.plans' : 'my-licenses.index'),
+                'lat' => null, 'lng' => null, 'speed' => null, 'bearing' => null,
+                'battery' => null, 'gpsEnabled' => null, 'internetEnabled' => null,
+                'networkType' => null, 'movementStatus' => 'idle', 'isOnline' => false,
+                'lastSeen' => null, 'lastActivity' => null, 'geofences' => [],
+            ]);
+        }
+
+        $markerPreferences = \App\Models\MapMarkerPreference::where('viewer_user_id', $user->id)
+            ->get()->keyBy('tracked_user_id');
+        $people = $people->map(function ($person) use ($markerPreferences) {
+            $person['marker'] = $markerPreferences->get($person['id'])?->markerData()
+                ?? ['kind' => 'person', 'imageUrl' => null];
+            return $person;
+        });
 
         return view('live-map.index', [
             'people' => $people,
@@ -118,6 +154,13 @@ class LiveMapController extends Controller
         return back()->with('status', $preference->self_tracking_enabled
             ? 'Self tracking enabled. Allow browser location access to save your route.'
             : 'Self tracking stopped. No new browser location points will be saved from this map.');
+    }
+
+    public function snapshot(): \Illuminate\Http\JsonResponse
+    {
+        // Reuse the same license/relationship scope as the initial page.
+        return response()->json(['people' => $this->index()->getData()['people']])
+            ->header('Cache-Control', 'no-store');
     }
 
     /**

@@ -41,6 +41,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::apiResource('license-plans', LicensePlanController::class)->only(['index', 'store']);
         Route::apiResource('user-licenses', UserLicenseController::class)->only(['index', 'store']);
         Route::post('gps/locations', [GpsLocationController::class, 'store'])->name('gps.locations.store');
+        Route::post('gps/heartbeat', fn () => response()->noContent())->name('gps.heartbeat');
         Route::post('gps/locations/batch', [GpsLocationController::class, 'batchStore'])->name('gps.locations.batch');
         Route::post('gps/diagnostics', [DiagnosticController::class, 'store'])->name('gps.diagnostics.store');
         Route::get('users/{user}/diagnostics', [DiagnosticController::class, 'show'])->name('users.diagnostics.show');

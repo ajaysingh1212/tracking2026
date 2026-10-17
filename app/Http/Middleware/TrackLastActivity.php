@@ -37,7 +37,7 @@ class TrackLastActivity
                 'is_current' => true,
             ]);
 
-        if ($request->is('presence/heartbeat')) {
+        if ($request->is('presence/heartbeat', 'api/v1/gps/heartbeat')) {
             app(UserPresenceService::class)->broadcastChange($request->user()->id);
         }
 
