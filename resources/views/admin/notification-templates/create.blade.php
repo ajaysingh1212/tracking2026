@@ -15,8 +15,7 @@
                 @include('admin.notification-templates._form')
                 <div class="mt-4 d-flex gap-2">
                     <button type="submit" class="btn tracker-primary-btn">Create Template</button>
-                    <a href="{{ route('admin.notification-templates.index') }}" class="btn tracker-outline-btn">Cancel</a>
-                </div>
+<a href="{{ route('admin.notification-templates.index') }}" class="btn tracker-outline-btn d-inline-flex align-items-center justify-content-center">Cancel</a>                </div>
             </form>
         </div>
     </div>
